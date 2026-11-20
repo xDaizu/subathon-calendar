@@ -78,6 +78,7 @@ Lista de recompensas que se desbloquean al llegar a un número de subs. Todo des
 - **Lista** (pestaña «Desbloqueos», junto a «Eventos»): añade/edita recompensas; la meta de subs se cambia **directamente en la lista**. 🙈 oculta un desbloqueo (se guarda en el documento privado; si al mostrarlo ya se ha alcanzado, se desbloquea en directo).
 - **Cuántos se ven**: «Desbloqueados» (incluye el último) y «Próximos» — por defecto 3 + 2. Son máximos estrictos y se aplican al momento.
 - Al subir los subs, el overlay celebra **cada** desbloqueo alcanzado uno a uno (animación + scroll). Si bajas el número (corrección), salta sin animación.
+- **Enlace para compartir** (`unlocked.html`, en **⚙︎ Ajustes → Enlace para compartir**): página para tus espectadores (móvil u ordenador, no para OBS) con **solo** lo ya desbloqueado, lo más reciente arriba, y los subs actuales. Se actualiza en directo; los ocultos nunca salen.
 
 ## Desarrollo
 
@@ -106,3 +107,5 @@ A live OBS timeline + a fast control panel for running a subathon while you play
 **OBS:** panel → ⚙︎ Settings → OBS URL → Copy. Browser Source, 1920 × 200, transparent. URL params: `lang=es|en`, `pos=bottom|top`, `theme=dark|light`, `hours=12|24|48`, `accent=hex`.
 
 **Unlocks overlay:** a second, independent Browser Source (`unlocks.html`, 500 × 600, URL in the same Settings box) showing rewards unlocked by sub count. Update subs from the "Subs" tab next to "Time"; manage the list in the "Unlocks" tab next to "Events" (targets editable inline, 🙈 hides one in the private doc). Choose how many unlocked (incl. the latest) and upcoming ones show — default 3 + 2, strict maximums. When subs go up, each reached unlock plays its own unlock animation and scroll, one after another; corrections down jump without animation.
+
+**Share link:** `unlocked.html` (⚙︎ Settings → Share link) is a page for viewers (phone or desktop, not OBS) listing **only** the rewards already unlocked, newest first, with the current sub count. Updates live; hidden unlocks never show.

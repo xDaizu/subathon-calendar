@@ -87,6 +87,12 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
         <ObsUrl label={t('obsUnlocks')} size={t('obsUnlocksSize')} url={buildOverlayUrl(appBaseUrl(), uid, 'unlocks')} />
       </div>
 
+      <div className="mb-5 rounded-2xl bg-ink-800/70 p-4 ring-1 ring-white/5">
+        <div className="mb-1 text-sm font-bold">{t('shareUrl')}</div>
+        <div className="text-xs text-ink-300">{t('shareUrlHint')}</div>
+        <ObsUrl label={`🔓 ${t('unlockedTitle')}`} url={buildOverlayUrl(appBaseUrl(), uid, 'unlocked')} />
+      </div>
+
       <Field label={t('title')}>
         <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} />
       </Field>
@@ -146,7 +152,7 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
   );
 }
 
-function ObsUrl({ label, size, url }: { label: string; size: string; url: string }) {
+function ObsUrl({ label, size, url }: { label: string; size?: string; url: string }) {
   const { t } = useT();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -162,7 +168,7 @@ function ObsUrl({ label, size, url }: { label: string; size: string; url: string
     <div className="mt-3 rounded-xl bg-ink-950/40 p-3 ring-1 ring-white/5">
       <div className="mb-2 flex items-center justify-between gap-2 text-xs">
         <span className="font-bold text-ink-100">{label}</span>
-        <span className="tabular text-ink-400">{size}</span>
+        {size && <span className="tabular text-ink-400">{size}</span>}
       </div>
       <div className="mb-2 break-all rounded-lg bg-ink-950/60 p-2 font-mono text-[0.7rem] text-ink-300">{url}</div>
       <Button variant="primary" size="sm" className="w-full" onClick={copy}>
