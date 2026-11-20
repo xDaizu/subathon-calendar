@@ -3,7 +3,7 @@
  * Firestore wrappers in `subathon.ts` run these inside transactions.
  */
 import { currentRemaining, isEnded, MIN, overrideMatches, REST_CONSUME_WINDOW } from './schedule';
-import type { Clock, FullState, PlannedEvent, Subathon } from './types';
+import type { Clock, FullState, PlannedEvent, Subathon, Unlock, UnlockView } from './types';
 
 type Action = (st: FullState, now: number) => FullState;
 
@@ -290,6 +290,63 @@ export const delayEvent =
     mapEvents({ ...st, pub: touch(st.pub, now) }, (e) =>
       e.id === id ? { ...e, startAt: e.startAt + deltaMs, endAt: e.endAt + deltaMs } : e,
     );
+
+// ───────────── Subs & unlocks (public: the unlocks overlay shows them) ─────────────
+
+export const setSubs =
+  (n: number): Action =>
+  (st, now) => ({ ...st, pub: touch({ ...st.pub, subs: Math.max(0, Math.round(n)) }, now) });
+
+export const adjustSubs =
+  (delta: number): Action =>
+  (st, now) =>
+    setSubs((st.pub.subs ?? 0) + delta)(st, now);
+
+/** Hidden unlocks live in the private doc, so viewers can't see them at all. */
+export const upsertUnlock =
+  (u: Unlock, hidden: boolean): Action =>
+  (st, now) => {
+    const pubU = (st.pub.unlocks ?? []).filter((x) => x.id !== u.id);
+    const privU = (st.priv.unlocks ?? []).filter((x) => x.id !== u.id);
+    return {
+      pub: touch({ ...st.pub, unlocks: hidden ? pubU : [...pubU, u] }, now),
+      priv: { ...st.priv, unlocks: hidden ? [...privU, u] : privU },
+    };
+  };
+
+function findUnlock(st: FullState, id: string): { u: Unlock; hidden: boolean } | undefined {
+  const pubU = st.pub.unlocks?.find((x) => x.id === id);
+  if (pubU) return { u: pubU, hidden: false };
+  const privU = st.priv.unlocks?.find((x) => x.id === id);
+  return privU ? { u: privU, hidden: true } : undefined;
+}
+
+export const deleteUnlock =
+  (id: string): Action =>
+  (st, now) => ({
+    pub: touch({ ...st.pub, unlocks: (st.pub.unlocks ?? []).filter((x) => x.id !== id) }, now),
+    priv: { ...st.priv, unlocks: (st.priv.unlocks ?? []).filter((x) => x.id !== id) },
+  });
+
+export const setUnlockHidden =
+  (id: string, hidden: boolean): Action =>
+  (st, now) => {
+    const found = findUnlock(st, id);
+    if (!found || found.hidden === hidden) return st;
+    return upsertUnlock(found.u, hidden)(st, now);
+  };
+
+export const setUnlockTarget =
+  (id: string, target: number): Action =>
+  (st, now) => {
+    const found = findUnlock(st, id);
+    if (!found) return st;
+    return upsertUnlock({ ...found.u, target: Math.max(1, Math.round(target)) }, found.hidden)(st, now);
+  };
+
+export const setUnlockView =
+  (view: UnlockView): Action =>
+  (st, now) => ({ ...st, pub: touch({ ...st.pub, unlockView: view }, now) });
 
 export const updateSettings =
   (patch: Partial<Pick<Subathon, 'title' | 'startAt' | 'restStandard' | 'tz' | 'tzLabel'>>): Action =>

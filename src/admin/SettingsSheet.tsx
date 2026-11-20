@@ -39,7 +39,6 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
   const [tz, setTz] = useState(s.tz);
   const [labelEs, setLabelEs] = useState('');
   const [labelEn, setLabelEn] = useState('');
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -53,7 +52,6 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
   }, [open]);
 
   const tzOptions = COMMON_TZ.includes(s.tz) ? COMMON_TZ : [s.tz, ...COMMON_TZ];
-  const url = buildOverlayUrl(appBaseUrl(), { uid, ...prefs });
 
   const save = () => {
     const startAt = start ? fromZonedTime(start, tz).getTime() : s.startAt;
@@ -71,16 +69,6 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
     onOpenChange(false);
   };
 
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      /* ignore */
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
   return (
     <Sheet
       open={open}
@@ -92,28 +80,26 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
         </Button>
       }
     >
-      {/* OBS URL first: it's what people come here for. */}
+      {/* OBS URLs first: it's what people come here for. */}
       <div className="mb-5 rounded-2xl bg-gradient-to-br from-accent/15 to-accent-2/10 p-4 ring-1 ring-accent/25">
         <div className="mb-1 text-sm font-bold">📺 {t('obsUrl')}</div>
-        <div className="mb-3 text-xs text-ink-300">{t('obsUrlHint')}</div>
-        <div className="mb-3 break-all rounded-xl bg-ink-950/60 p-3 font-mono text-xs text-ink-300">{url}</div>
+        <div className="mb-3 text-xs text-ink-300">{t('obsUrlsHint')}</div>
         <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
           <PrefRow label={t('language')}>
             <Segmented value={prefs.lang} onChange={(v) => setPrefs({ lang: v })} options={[{ value: 'es', label: 'ES' }, { value: 'en', label: 'EN' }]} />
           </PrefRow>
-          <PrefRow label={t('position')}>
-            <Segmented value={prefs.pos} onChange={(v) => setPrefs({ pos: v })} options={[{ value: 'top', label: t('top') }, { value: 'bottom', label: t('bottom') }]} />
-          </PrefRow>
           <PrefRow label={t('theme')}>
             <Segmented value={prefs.theme} onChange={(v) => setPrefs({ theme: v })} options={[{ value: 'dark', label: t('dark') }, { value: 'light', label: t('light') }]} />
           </PrefRow>
-          <PrefRow label={t('window')}>
+          <PrefRow label={t('position')} note={t('timelineOnly')}>
+            <Segmented value={prefs.pos} onChange={(v) => setPrefs({ pos: v })} options={[{ value: 'top', label: t('top') }, { value: 'bottom', label: t('bottom') }]} />
+          </PrefRow>
+          <PrefRow label={t('window')} note={t('timelineOnly')}>
             <Segmented value={String(prefs.hours)} onChange={(v) => setPrefs({ hours: Number(v) as WindowHours })} options={WINDOW_HOURS.map((h) => ({ value: String(h), label: `${h}h` }))} />
           </PrefRow>
         </div>
-        <Button variant="primary" size="sm" className="w-full" onClick={copy}>
-          {copied ? `✓ ${t('copied')}` : `⧉ ${t('copy')}`}
-        </Button>
+        <ObsUrl label={t('obsTimeline')} size="1920 × 200" url={buildOverlayUrl(appBaseUrl(), { uid, ...prefs })} />
+        <ObsUrl label={t('obsUnlocks')} size={t('obsUnlocksSize')} url={buildOverlayUrl(appBaseUrl(), { uid, ...prefs }, {}, 'unlocks')} />
       </div>
 
       <Field label={t('title')}>
@@ -175,11 +161,39 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
   );
 }
 
-function PrefRow({ label, children }: { label: string; children: ReactNode }) {
+function PrefRow({ label, note, children }: { label: string; note?: string; children: ReactNode }) {
   return (
     <div>
-      <div className="mb-1 font-semibold text-ink-300">{label}</div>
+      <div className="mb-1 font-semibold text-ink-300">
+        {label} {note && <span className="font-normal text-ink-400">· {note}</span>}
+      </div>
       {children}
+    </div>
+  );
+}
+
+function ObsUrl({ label, size, url }: { label: string; size: string; url: string }) {
+  const { t } = useT();
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      /* ignore */
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <div className="mt-3 rounded-xl bg-ink-950/40 p-3 ring-1 ring-white/5">
+      <div className="mb-2 flex items-center justify-between gap-2 text-xs">
+        <span className="font-bold text-ink-100">{label}</span>
+        <span className="tabular text-ink-400">{size}</span>
+      </div>
+      <div className="mb-2 break-all rounded-lg bg-ink-950/60 p-2 font-mono text-[0.7rem] text-ink-300">{url}</div>
+      <Button variant="primary" size="sm" className="w-full" onClick={copy}>
+        {copied ? `✓ ${t('copied')}` : `⧉ ${t('copy')}`}
+      </Button>
     </div>
   );
 }

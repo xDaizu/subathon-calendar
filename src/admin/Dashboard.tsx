@@ -6,15 +6,16 @@ import { isEnded, projectSchedule } from '../lib/schedule';
 import { apply, migrate, usePrivate } from '../lib/subathon';
 import type { Private, Subathon } from '../lib/types';
 import { useNow } from '../lib/useNow';
-import { Button, Segmented } from '../ui/ui';
+import { Button, Card, Segmented } from '../ui/ui';
 import { Loading } from './Loading';
 import { AdminProvider } from './context';
+import { CounterCard } from './CounterCard';
 import { EventList } from './EventList';
 import { EventSheet } from './EventSheet';
 import { LiveToggles } from './LiveToggles';
-import { Preview } from './Preview';
-import { RemainingCard } from './RemainingCard';
 import { SettingsSheet } from './SettingsSheet';
+import { UnlockList } from './UnlockList';
+import { useStoredTab } from './useStoredTab';
 
 export function Dashboard({ uid, s, demo }: { uid: string; s: Subathon; demo: boolean }) {
   const priv = usePrivate(uid);
@@ -33,6 +34,17 @@ function Ready({ uid, s, priv, demo }: { uid: string; s: Subathon; priv: Private
   const schedule = useMemo(() => projectSchedule(clock, now), [clock, now]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [listTab, setListTab] = useStoredTab('subathon.listTab', ['events', 'unlocks'] as const, 'events');
+  const listTabs = (
+    <Segmented
+      value={listTab}
+      onChange={setListTab}
+      options={[
+        { value: 'events', label: `📅 ${t('events')}` },
+        { value: 'unlocks', label: `🔓 ${t('unlocks')}` },
+      ]}
+    />
+  );
 
   // When the timer runs out: stop whatever is live and show "the end" on stream.
   // (Only the panel knows the timer, so this happens while the panel is open.)
@@ -66,12 +78,17 @@ function Ready({ uid, s, priv, demo }: { uid: string; s: Subathon; priv: Private
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start">
           <div className="flex flex-col gap-4 lg:sticky lg:top-4">
-            <RemainingCard />
+            <CounterCard />
             <LiveToggles />
           </div>
           <div className="flex flex-col gap-4">
-            <Preview />
-            <EventList onAdd={() => setAddOpen(true)} />
+            <Card>
+              {listTab === 'events' ? (
+                <EventList onAdd={() => setAddOpen(true)} tabs={listTabs} />
+              ) : (
+                <UnlockList tabs={listTabs} />
+              )}
+            </Card>
           </div>
         </div>
 
@@ -84,8 +101,8 @@ function Ready({ uid, s, priv, demo }: { uid: string; s: Subathon; priv: Private
         )}
       </div>
 
-      {/* Floating add button */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-30 flex justify-end px-5 lg:hidden">
+      {/* Floating add button (events tab; unlocks have their own add button) */}
+      <div className={`pointer-events-none fixed inset-x-0 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-30 flex justify-end px-5 lg:hidden ${listTab === 'events' ? '' : 'hidden'}`}>
         <Button
           variant="primary"
           size="lg"

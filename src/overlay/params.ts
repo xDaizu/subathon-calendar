@@ -33,10 +33,14 @@ export function readParams(search = window.location.search): OverlayParams {
   };
 }
 
+/** The two OBS pages. Both read the same public document and the same URL options. */
+export type OverlayPage = 'overlay' | 'unlocks';
+
 export function buildOverlayUrl(
   base: string,
   p: Partial<Omit<OverlayParams, 'preview'>> & { uid: string },
   extra: Record<string, string> = {},
+  page: OverlayPage = 'overlay',
 ): string {
   const q = new URLSearchParams({ u: p.uid });
   if (p.lang && p.lang !== 'es') q.set('lang', p.lang);
@@ -45,5 +49,10 @@ export function buildOverlayUrl(
   if (p.hours && p.hours !== 24) q.set('hours', String(p.hours));
   if (p.accent && p.accent !== '#a855f7') q.set('accent', p.accent.replace('#', ''));
   for (const [k, v] of Object.entries(extra)) q.set(k, v);
-  return `${base}overlay.html?${q.toString()}`;
+  if (page === 'unlocks') {
+    // Timeline-only options.
+    q.delete('pos');
+    q.delete('hours');
+  }
+  return `${base}${page}.html?${q.toString()}`;
 }

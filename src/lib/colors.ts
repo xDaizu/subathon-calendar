@@ -11,6 +11,8 @@ export const EVENT_COLORS = [
 
 export const EVENT_EMOJIS = ['🎮', '🎃', '👻', '🎤', '🍳', '🧩', '🏆', '🎲', '🎨', '💬', '🎵', '🏋️', '🍕', '🎁', '⚔️', '🚗'];
 
+export const UNLOCK_EMOJIS = ['🎁', '🎮', '🍕', '🌶️', '🎤', '💇', '🎨', '👗', '🧁', '🍺', '🎲', '💀', '🤡', '🏆', '🔥', '🎵'];
+
 export function eventColor(color: string | undefined, fallback = EVENT_COLORS[0]): string {
   return color || fallback;
 }

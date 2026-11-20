@@ -6,6 +6,10 @@ html.overlay-root {
   font-size: calc(100vw / 96);
   background: transparent !important;
 }
+/* Unlocks overlay: a narrow card. 20px at 500px wide. */
+html.unlocks-root {
+  font-size: calc(100vw / 25);
+}
 html.overlay-root body {
   margin: 0;
   background: transparent !important;
@@ -119,6 +123,50 @@ html.overlay-root body {
   background: white;
   box-shadow: 0 0 0.4rem white;
   animation: var(--animate-twinkle);
+}
+
+/* ───────────── Unlocks ───────────── */
+
+.ul-row {
+  background: var(--track);
+  transition:
+    background 0.6s,
+    box-shadow 0.6s,
+    opacity 0.6s;
+}
+.ul-latest {
+  background: color-mix(in oklab, var(--accent) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.ul-next {
+  box-shadow: inset 0 0 0 1px var(--glass-border);
+}
+.ul-locked {
+  opacity: 0.62;
+}
+.ul-celebrating {
+  background: color-mix(in oklab, var(--accent) 22%, transparent);
+}
+.ul-glow {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--accent) 35%, transparent),
+    color-mix(in oklab, var(--accent2) 30%, transparent)
+  );
+  box-shadow:
+    inset 0 0 0 2px color-mix(in oklab, var(--accent2) 70%, transparent),
+    inset 0 0 1.5rem color-mix(in oklab, var(--accent) 50%, transparent);
+}
+.ul-shine {
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-18deg);
+}
+.ul-spark {
+  background: radial-gradient(circle, #fff, var(--accent2) 60%, transparent 70%);
+  box-shadow: 0 0 0.5rem var(--accent2);
+}
+.ul-bar {
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .preview-bg {

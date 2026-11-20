@@ -6,18 +6,21 @@ import { eventColor } from '../lib/colors';
 import { eventDisplayState, eventWarning } from '../lib/schedule';
 import { formatDayShort, formatTime } from '../lib/time';
 import type { PlannedEvent } from '../lib/types';
-import { Button, Card, Chip, cx, SectionTitle } from '../ui/ui';
+import { Button, Chip, cx } from '../ui/ui';
 import { useAdmin } from './context';
 import { EventSheet, type EditTarget } from './EventSheet';
+import { OverlayFrame } from './Preview';
 
 type Filter = 'all' | 'visible' | 'hidden';
 
-export function EventList({ onAdd }: { onAdd: () => void }) {
+/** Events tab of the lists card. `tabs` goes in the header. */
+export function EventList({ onAdd, tabs }: { onAdd: () => void; tabs: ReactNode }) {
   const { s, priv } = useAdmin();
   const { t } = useT();
   const [filter, setFilter] = useState<Filter>('all');
   const [editing, setEditing] = useState<EditTarget | null>(null);
   const [showPast, setShowPast] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(true);
 
   const rows = useMemo(() => {
     const all = [
@@ -34,16 +37,23 @@ export function EventList({ onAdd }: { onAdd: () => void }) {
   const hiddenCount = priv.events.length;
 
   return (
-    <Card>
-      <SectionTitle
-        right={
-          <Button size="sm" variant="secondary" className="hidden lg:inline-flex" onClick={onAdd}>
+    <>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        {tabs}
+        {/* Phones use the floating add button. */}
+        <span className="hidden lg:block">
+          <Button size="sm" variant="secondary" onClick={onAdd}>
             ＋ {t('addEvent')}
           </Button>
-        }
-      >
-        {t('events')}
-      </SectionTitle>
+        </span>
+      </div>
+
+      <div className="mb-3">
+        <button className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-ink-400" onClick={() => setPreviewOpen((v) => !v)}>
+          {previewOpen ? '▾' : '▸'} 📺 {t('previewShort')}
+        </button>
+        {previewOpen && <OverlayFrame page="overlay" />}
+      </div>
 
       <div className="mb-3 flex gap-2">
         <Chip active={filter === 'all'} className="h-8 text-xs" onClick={() => setFilter('all')}>
@@ -86,8 +96,10 @@ export function EventList({ onAdd }: { onAdd: () => void }) {
         </div>
       )}
 
+      {rows.current.length + rows.past.length > 0 && <AddRowButton label={t('addEvent')} onClick={onAdd} />}
+
       <EventSheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)} editing={editing} />
-    </Card>
+    </>
   );
 }
 
@@ -179,5 +191,17 @@ function Badge({ children, tone }: { children: ReactNode; tone?: 'live' | 'amber
     >
       {children}
     </span>
+  );
+}
+
+/** Add button at the end of a list, so it's reachable when the list grows. */
+export function AddRowButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 text-sm font-semibold text-ink-300 transition hover:bg-white/5 active:scale-[0.98]"
+    >
+      ＋ {label}
+    </button>
   );
 }

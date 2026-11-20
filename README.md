@@ -68,6 +68,16 @@ npm run dev
 1. Entra en el panel, crea tu subatón y abre **⚙︎ Ajustes → URL para OBS → Copiar**.
 2. En OBS: **Fuente → Navegador**, pega la URL, **ancho 1920, alto 200**. El fondo ya es transparente.
 3. Opciones de la URL (también desde Ajustes): `lang=es|en`, `pos=bottom|top`, `theme=dark|light`, `hours=12|24|48` (ventana visible), `accent=a855f7`.
+4. **Segundo overlay: desbloqueos** (`unlocks.html`, misma URL con otra página; también en **Ajustes → URL para OBS**). Otra fuente de navegador independiente, **500 × 600**, colócala donde quieras. Comparte `lang`, `theme` y `accent`.
+
+### Desbloqueos
+
+Lista de recompensas que se desbloquean al llegar a un número de subs. Todo desde el mismo panel:
+
+- **Subs**: pestaña junto a «Tiempo» en la tarjeta del contador (−1, +1, +5, +10 o número exacto). Todo con Deshacer.
+- **Lista** (pestaña «Desbloqueos», junto a «Eventos»): añade/edita recompensas; la meta de subs se cambia **directamente en la lista**. 🙈 oculta un desbloqueo (se guarda en el documento privado; si al mostrarlo ya se ha alcanzado, se desbloquea en directo).
+- **Cuántos se ven**: «Desbloqueados» (incluye el último) y «Próximos» — por defecto 3 + 2. Son máximos estrictos y se aplican al momento.
+- Al subir los subs, el overlay celebra **cada** desbloqueo alcanzado uno a uno (animación + scroll). Si bajas el número (corrección), salta sin animación.
 
 ## Desarrollo
 
@@ -94,3 +104,5 @@ A live OBS timeline + a fast control panel for running a subathon while you play
 **Deploy:** create a Firebase project → enable Google sign-in → add `YOUR-USER.github.io` to authorized domains → create Firestore → copy [`firestore.rules.example`](firestore.rules.example) to the git-ignored `firestore.rules`, fill in the editors and deploy it → register a web app. Put the config in `.env.local` (local) and in GitHub **Actions variables** (`VITE_FIREBASE_*`). Set **Pages → Source: GitHub Actions**; every push to `main` deploys.
 
 **OBS:** panel → ⚙︎ Settings → OBS URL → Copy. Browser Source, 1920 × 200, transparent. URL params: `lang=es|en`, `pos=bottom|top`, `theme=dark|light`, `hours=12|24|48`, `accent=hex`.
+
+**Unlocks overlay:** a second, independent Browser Source (`unlocks.html`, 500 × 600, URL in the same Settings box) showing rewards unlocked by sub count. Update subs from the "Subs" tab next to "Time"; manage the list in the "Unlocks" tab next to "Events" (targets editable inline, 🙈 hides one in the private doc). Choose how many unlocked (incl. the latest) and upcoming ones show — default 3 + 2, strict maximums. When subs go up, each reached unlock plays its own unlock animation and scroll, one after another; corrections down jump without animation.

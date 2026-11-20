@@ -56,6 +56,23 @@ export interface Interval {
   endAt: number;
 }
 
+/** A reward viewers unlock when the sub count reaches `target`. Public (shown on the unlocks overlay). */
+export interface Unlock {
+  id: string;
+  title: string;
+  emoji?: string;
+  /** Sub count that unlocks it. */
+  target: number;
+}
+
+/** How many unlocks the overlay shows around the current one. */
+export interface UnlockView {
+  /** Unlocked ones, counting the latest. */
+  past: number;
+  /** Still locked ones. */
+  next: number;
+}
+
 export interface Subathon {
   title: string;
   /** When the subathon starts. The countdown doesn't run before it. */
@@ -68,6 +85,10 @@ export interface Subathon {
   restOverride?: RestOverride;
   restLog: Interval[];
   events: PlannedEvent[];
+  /** Current sub count (drives the unlocks). Missing in older documents: 0. */
+  subs?: number;
+  unlocks?: Unlock[];
+  unlockView?: UnlockView;
   /** Set by the panel when the timer runs out (the timer itself is private). */
   endedAt?: number;
   updatedAt: number;
@@ -79,9 +100,11 @@ export interface Timer {
   remainingSetAt: number;
 }
 
-/** Owner-only document: hidden events + the timer. */
+/** Owner-only document: hidden events and unlocks + the timer. */
 export interface Private {
   events: PlannedEvent[];
+  /** Hidden unlocks: not on stream until revealed. */
+  unlocks?: Unlock[];
   timer: Timer;
   restStash?: RestStash;
 }

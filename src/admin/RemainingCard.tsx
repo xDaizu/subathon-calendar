@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useT } from '../i18n';
 import * as A from '../lib/actions';
 import { currentRemaining, HOUR, MIN, projectSchedule } from '../lib/schedule';
 import { formatDateTime, formatDuration, parseDuration } from '../lib/time';
-import { Button, Card, inputCls, Sheet } from '../ui/ui';
+import { Button, inputCls, Sheet } from '../ui/ui';
 import { useAdmin } from './context';
 
 const QUICK = [5 * MIN, 15 * MIN, 30 * MIN, HOUR];
 
-export function RemainingCard() {
+/** Remaining-time tab of the counter card. */
+export function RemainingPanel({ tabs }: { tabs: ReactNode }) {
   const { s, clock, now, schedule, act } = useAdmin();
   const { t, lang } = useT();
   const [open, setOpen] = useState(false);
@@ -21,10 +22,13 @@ export function RemainingCard() {
   };
 
   return (
-    <Card className="relative overflow-hidden">
+    <>
       <div className="pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full bg-accent/20 blur-3xl" />
-      <div className="text-xs font-bold uppercase tracking-[0.16em] text-ink-400">
-        {t('remaining')} {paused && <span className="ml-1 rounded-md bg-night/25 px-1.5 py-0.5 text-indigo-200">⏸ {t('paused')}</span>}
+      <div className="relative flex items-center justify-between gap-2">
+        <div className="text-xs font-bold uppercase tracking-[0.16em] text-ink-400">
+          {t('remaining')} {paused && <span className="ml-1 rounded-md bg-night/25 px-1.5 py-0.5 text-indigo-200">⏸ {t('paused')}</span>}
+        </div>
+        {tabs}
       </div>
       <button
         className="font-display tabular mt-1 block w-full text-left text-[2.6rem] leading-none font-bold tracking-tight transition active:scale-[0.98] sm:text-5xl"
@@ -57,7 +61,7 @@ export function RemainingCard() {
       </Button>
 
       <OverrideSheet open={open} onOpenChange={setOpen} />
-    </Card>
+    </>
   );
 }
 
