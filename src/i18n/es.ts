@@ -169,6 +169,7 @@ export const es = {
   toastTarget: '«{title}»: {n} subs',
   unlockHiddenHint: 'Desactívalo para prepararlo en secreto. Si al mostrarlo ya se ha alcanzado, se desbloquea en directo.',
   previewShort: 'Vista previa',
+  customize: 'Personalizar',
   showSizes: 'Tamaños',
   showSizesHint: 'Bronce, plata, oro y diamante (S, M, L, XL). Apagado: todos se ven igual.',
   unlockSize: 'Tamaño',

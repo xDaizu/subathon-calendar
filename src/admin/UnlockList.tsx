@@ -21,7 +21,7 @@ import { Button, cx, Field, inputCls, Sheet, Switch } from '../ui/ui';
 import { useAdmin } from './context';
 import { AddRowButton } from './EventList';
 import { EventSheet, type EditTarget, type EventPrefill } from './EventSheet';
-import { OverlayFrame } from './Preview';
+import { PreviewSection } from './Preview';
 
 interface Row {
   u: Unlock;
@@ -38,7 +38,6 @@ export function UnlockList({ tabs }: { tabs: ReactNode }) {
   const [editing, setEditing] = useState<Row | null>(null);
   const [adding, setAdding] = useState(false);
   const [eventSheet, setEventSheet] = useState<EventSheetState | null>(null);
-  const [previewOpen, setPreviewOpen] = useState(true);
   const linked = useMemo(() => eventsByUnlock(s.events, priv.events), [s.events, priv.events]);
 
   const openEventFor = (u: Unlock) => {
@@ -74,14 +73,12 @@ export function UnlockList({ tabs }: { tabs: ReactNode }) {
         </Button>
       </div>
 
-      {onScreenIds.size > 0 && (
-        <div className="mb-3">
-          <button className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-ink-400" onClick={() => setPreviewOpen((v) => !v)}>
-            {previewOpen ? '▾' : '▸'} 📺 {t('previewShort')}
-          </button>
-          {previewOpen && <OverlayFrame page="unlocks" className="max-w-72" />}
-        </div>
-      )}
+      <PreviewSection
+        page="unlocks"
+        frameClassName="max-w-72"
+        showFrame={onScreenIds.size > 0}
+        customize={<UnlockViewCard view={view} onChange={setView} />}
+      />
 
       {rows.length === 0 && (
         <div className="rounded-2xl border border-dashed border-white/10 py-10 text-center text-sm text-ink-400">{t('noUnlocks')}</div>
@@ -187,25 +184,6 @@ export function UnlockList({ tabs }: { tabs: ReactNode }) {
 
       {rows.length > 0 && <AddRowButton label={t('addUnlock')} onClick={() => setAdding(true)} />}
 
-      <div className="mt-4 rounded-2xl bg-ink-800/70 p-3 ring-1 ring-white/5">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <Stepper label={`✓ ${t('showUnlocked')}`} value={view.past} onChange={(v) => setView({ past: v })} />
-          <Stepper label={`🔒 ${t('showNext')}`} value={view.next} onChange={(v) => setView({ next: v })} />
-        </div>
-        <div className="mt-2 text-xs text-ink-400">{t('unlocksViewHint')}</div>
-        <div className="mt-3 flex items-center justify-between gap-4 border-t border-white/5 pt-3">
-          <div>
-            <div className="text-sm font-semibold text-ink-300">💎 {t('showSizes')}</div>
-            <div className="text-xs text-ink-400">{t('showSizesHint')}</div>
-          </div>
-          <Switch
-            checked={!!s.unlockSizes}
-            onChange={(on) => void act(A.setUnlockSizes(on))}
-            label={t('showSizes')}
-          />
-        </div>
-      </div>
-
       <UnlockSheet
         open={adding || !!editing}
         onOpenChange={(o) => {
@@ -223,6 +201,32 @@ export function UnlockList({ tabs }: { tabs: ReactNode }) {
         prefill={eventSheet && 'prefill' in eventSheet ? eventSheet.prefill : null}
       />
     </>
+  );
+}
+
+/** How many unlocks show on stream, and whether sizes are drawn. */
+function UnlockViewCard({ view, onChange }: { view: UnlockView; onChange: (patch: Partial<UnlockView>) => void }) {
+  const { s, act } = useAdmin();
+  const { t } = useT();
+  return (
+    <div className="rounded-2xl bg-ink-800/70 p-3 ring-1 ring-white/5">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <Stepper label={`✓ ${t('showUnlocked')}`} value={view.past} onChange={(v) => onChange({ past: v })} />
+        <Stepper label={`🔒 ${t('showNext')}`} value={view.next} onChange={(v) => onChange({ next: v })} />
+      </div>
+      <div className="mt-2 text-xs text-ink-400">{t('unlocksViewHint')}</div>
+      <div className="mt-3 flex items-center justify-between gap-4 border-t border-white/5 pt-3">
+        <div>
+          <div className="text-sm font-semibold text-ink-300">💎 {t('showSizes')}</div>
+          <div className="text-xs text-ink-400">{t('showSizesHint')}</div>
+        </div>
+        <Switch
+          checked={!!s.unlockSizes}
+          onChange={(on) => void act(A.setUnlockSizes(on))}
+          label={t('showSizes')}
+        />
+      </div>
+    </div>
   );
 }
 

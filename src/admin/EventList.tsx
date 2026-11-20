@@ -11,7 +11,7 @@ import { Button, Chip, cx, Segmented } from '../ui/ui';
 import { useAdmin } from './context';
 import { EventSheet, type EditTarget } from './EventSheet';
 import { useOverlayLookSetting } from './overlayPrefs';
-import { OverlayFrame } from './Preview';
+import { PreviewSection } from './Preview';
 
 type Filter = 'all' | 'visible' | 'hidden';
 
@@ -22,7 +22,6 @@ export function EventList({ onAdd, tabs }: { onAdd: () => void; tabs: ReactNode 
   const [filter, setFilter] = useState<Filter>('all');
   const [editing, setEditing] = useState<EditTarget | null>(null);
   const [showPast, setShowPast] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(true);
 
   const rows = useMemo(() => {
     const all = [
@@ -50,12 +49,7 @@ export function EventList({ onAdd, tabs }: { onAdd: () => void; tabs: ReactNode 
         </span>
       </div>
 
-      <div className="mb-3">
-        <button className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-ink-400" onClick={() => setPreviewOpen((v) => !v)}>
-          {previewOpen ? '▾' : '▸'} 📺 {t('previewShort')}
-        </button>
-        {previewOpen && <OverlayFrame page="overlay" />}
-      </div>
+      <PreviewSection page="overlay" customize={<OverlayLookCard />} />
 
       <div className="mb-3 flex gap-2">
         <Chip active={filter === 'all'} className="h-8 text-xs" onClick={() => setFilter('all')}>
@@ -100,7 +94,6 @@ export function EventList({ onAdd, tabs }: { onAdd: () => void; tabs: ReactNode 
 
       {rows.current.length + rows.past.length > 0 && <AddRowButton label={t('addEvent')} onClick={onAdd} />}
 
-      <OverlayLookCard />
 
       <EventSheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)} editing={editing} />
     </>
@@ -112,7 +105,7 @@ function OverlayLookCard() {
   const { t } = useT();
   const [look, setLook] = useOverlayLookSetting();
   return (
-    <div className="mt-4 rounded-2xl bg-ink-800/70 p-3 ring-1 ring-white/5">
+    <div className="rounded-2xl bg-ink-800/70 p-3 ring-1 ring-white/5">
       <div className="grid grid-cols-2 gap-x-3 gap-y-3 text-xs">
         <LookRow label={t('language')}>
           <Segmented value={look.lang} onChange={(v) => setLook({ lang: v })} options={[{ value: 'es', label: 'ES' }, { value: 'en', label: 'EN' }]} />

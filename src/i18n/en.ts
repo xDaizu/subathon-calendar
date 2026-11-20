@@ -164,6 +164,7 @@ export const en: Dict = {
   toastTarget: '“{title}”: {n} subs',
   unlockHiddenHint: 'Turn off to prepare it in secret. If it’s already reached when you show it, it unlocks live.',
   previewShort: 'Preview',
+  customize: 'Customize',
   showSizes: 'Sizes',
   showSizesHint: 'Bronze, silver, gold and diamond (S, M, L, XL). Off: they all look the same.',
   unlockSize: 'Size',
