@@ -1,0 +1,39 @@
+rules_version = '2';
+
+// TEMPLATE. Copy to `firestore.rules` (git-ignored, so the real editor emails never get
+// committed), fill in the editors, then: npx firebase-tools deploy --only firestore:rules
+
+// Security model
+// - The admin panel is private: ONLY the editors below can write anything, and only they can
+//   read the private document (hidden events + remaining-time timer). Any other Google account
+//   that signs in gets nothing.
+// - There is a single subathon document (SUBATHON_ID in src/config.ts). Editors can only touch it.
+// - The overlay needs no login: anyone can *get* the public subathon document by its id
+//   (the id is in the OBS URL). Listing / enumerating documents is not allowed.
+// - Everything else is denied.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isEditor() {
+      return request.auth != null && (
+        // Daniel (by account id)
+        request.auth.uid == '1tFeYdWdHnhqb7qj9kSo8C5V5yS2'
+        // The streamer's accounts (by verified Google email)
+        || (request.auth.token.email in ['editor1@example.com', 'editor2@example.com']
+            && request.auth.token.email_verified == true)
+      );
+    }
+
+    function canEdit(id) {
+      return isEditor() && id == '1tFeYdWdHnhqb7qj9kSo8C5V5yS2';
+    }
+
+    match /subathons/{id} {
+      allow get: if true;
+      allow write: if canEdit(id);
+
+      match /private/{docId} {
+        allow read, write: if canEdit(id);
+      }
+    }
+  }
+}

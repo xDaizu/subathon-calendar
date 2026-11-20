@@ -20,7 +20,7 @@ export const en: Dict = {
   liveFor: 'for {d}',
 
   signIn: 'Sign in with Google',
-  signInHint: 'Only you can edit your subathon.',
+  signInHint: 'Private panel: only authorised accounts can sign in.',
   signOut: 'Sign out',
   loading: 'Loading…',
   undo: 'Undo',
@@ -49,7 +49,7 @@ export const en: Dict = {
 
   remaining: 'Remaining',
   paused: 'paused',
-  privateHint: 'Only you see this: the stream never shows the remaining time or the end.',
+  privateHint: 'Private: the stream never shows the remaining time or the end.',
   update: 'Update',
   overrideTitle: 'Remaining time',
   overrideHint: 'Type what your timer shows: “12h 25m”, “12:25”, “1d 3h”…',

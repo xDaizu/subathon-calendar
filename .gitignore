@@ -6,3 +6,6 @@ dist
 .firebase
 *.log
 tsconfig.tsbuildinfo
+
+# Real Firestore rules contain the editors' emails: keep them out of git (see firestore.rules.example)
+firestore.rules

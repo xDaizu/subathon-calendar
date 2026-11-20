@@ -8,6 +8,7 @@ import { formatDuration, parseDuration } from '../lib/time';
 import { browserTz, defaultTzLabel } from '../lib/tz';
 import { Button, Card, Field, inputCls, Segmented } from '../ui/ui';
 import { ToastProvider } from '../ui/toast';
+import { SUBATHON_ID } from '../config';
 import { Dashboard } from './Dashboard';
 import { Loading } from './Loading';
 
@@ -84,10 +85,10 @@ function AuthGate() {
         </Card>
       </Shell>
     );
-  return <OwnerGate uid={user.uid} email={user.email} />;
+  return <OwnerGate uid={SUBATHON_ID} email={user.email} />;
 }
 
-/** Only owner accounts (see firestore.rules) get past this. */
+/** Only editor accounts (see firestore.rules) get past this. Everyone edits the same subathon. */
 function OwnerGate({ uid, email }: { uid: string; email: string | null }) {
   const { t } = useT();
   const access = useAccess(uid);

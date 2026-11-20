@@ -20,7 +20,7 @@ export const es = {
 
   // Admin — general
   signIn: 'Entrar con Google',
-  signInHint: 'Solo tú puedes editar tu subatón.',
+  signInHint: 'Panel privado: solo pueden entrar las cuentas autorizadas.',
   signOut: 'Salir',
   loading: 'Cargando…',
   undo: 'Deshacer',
@@ -51,7 +51,7 @@ export const es = {
   // Remaining card
   remaining: 'Quedan',
   paused: 'en pausa',
-  privateHint: 'Solo lo ves tú: en el directo no se muestra ni el tiempo restante ni el fin.',
+  privateHint: 'Privado: en el directo no se muestra ni el tiempo restante ni el fin.',
   update: 'Actualizar',
   overrideTitle: 'Tiempo restante',
   overrideHint: 'Escribe lo que marca tu temporizador: «12h 25m», «12:25», «1d 3h»…',

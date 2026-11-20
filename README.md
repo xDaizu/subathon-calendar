@@ -45,8 +45,7 @@ Abre <http://localhost:5173/subathon-calendar/admin.html?demo=1>. El modo demo g
 2. **Authentication → Sign-in method → Google**: actívalo.
 3. **Authentication → Settings → Authorized domains**: añade `TU-USUARIO.github.io`.
 4. **Firestore Database → Crear base de datos** (modo producción, región europea p. ej. `eur3`).
-5. **Firestore → Reglas**: pega el contenido de [`firestore.rules`](firestore.rules) y publica.
-   (O con la CLI: `npx firebase-tools deploy --only firestore:rules`.)
+5. **Reglas**: copia [`firestore.rules.example`](firestore.rules.example) a `firestore.rules` (no se sube a git: lleva los emails de quien puede entrar), pon tu id de cuenta y los emails autorizados, y publica con `npx firebase-tools deploy --only firestore:rules`.
 6. **Configuración del proyecto → Tus apps → Web (</>)**: registra una app y copia la configuración.
 
 ### 2. Local
@@ -92,6 +91,6 @@ A live OBS timeline + a fast control panel for running a subathon while you play
 
 **Try it:** `npm install && npm run dev`, open `/subathon-calendar/admin.html?demo=1` (localStorage demo; overlay at `overlay.html?u=demo` in the same browser).
 
-**Deploy:** create a Firebase project → enable Google sign-in → add `YOUR-USER.github.io` to authorized domains → create Firestore → paste [`firestore.rules`](firestore.rules) → register a web app. Put the config in `.env.local` (local) and in GitHub **Actions variables** (`VITE_FIREBASE_*`). Set **Pages → Source: GitHub Actions**; every push to `main` deploys.
+**Deploy:** create a Firebase project → enable Google sign-in → add `YOUR-USER.github.io` to authorized domains → create Firestore → copy [`firestore.rules.example`](firestore.rules.example) to the git-ignored `firestore.rules`, fill in the editors and deploy it → register a web app. Put the config in `.env.local` (local) and in GitHub **Actions variables** (`VITE_FIREBASE_*`). Set **Pages → Source: GitHub Actions**; every push to `main` deploys.
 
 **OBS:** panel → ⚙︎ Settings → OBS URL → Copy. Browser Source, 1920 × 200, transparent. URL params: `lang=es|en`, `pos=bottom|top`, `theme=dark|light`, `hours=12|24|48`, `accent=hex`.
