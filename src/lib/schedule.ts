@@ -14,7 +14,7 @@ export function overrideMatches(ov: { forOcc: number } | undefined, occ: number)
 }
 
 /** What rest projection needs (all public). */
-type RestInputs = Pick<Subathon, 'startAt' | 'restStandard' | 'tz' | 'rest' | 'restLog' | 'restOverride'>;
+type RestInputs = Pick<Subathon, 'startAt' | 'restStandard' | 'tz' | 'rest' | 'restLog' | 'restOverride' | 'restsHidden'>;
 /** What end estimation needs (public + private timer). */
 type TimeState = RestInputs & Timer;
 
@@ -49,8 +49,6 @@ export interface ProjectedRest extends Interval {
   occ: number;
   /** Times changed by hand for this one rest. */
   adjusted: boolean;
-  /** Turned off for this one time (only returned by `nextRestSlot`). */
-  skipped?: boolean;
 }
 
 /** Rests ahead of `now`. Public: computed by the overlay without knowing the end. */
@@ -78,7 +76,7 @@ function currentRestOf(s: RestInputs, now: number): RestPlan['currentRest'] {
  * skipped if already taken (an actual rest started within ±4h), or if its window is over.
  * An overdue one is assumed to start right away.
  */
-function* restWindows(s: RestInputs, now: number, withSkipped = false): Generator<ProjectedRest> {
+function* restWindows(s: RestInputs, now: number): Generator<ProjectedRest> {
   const dur = Math.max(0, s.restStandard.durationMin) * MIN;
   if (dur <= 0) return;
   let t = Math.max(now, s.startAt);
@@ -102,26 +100,25 @@ function* restWindows(s: RestInputs, now: number, withSkipped = false): Generato
     const len = adjusted ? Math.max(MIN, ov!.endAt! - ov!.startAt!) : dur;
     if (consumed(start)) continue;
     if (start + len <= t) continue; // window already over: missed, ignore
-    if (match && ov!.skipped) {
-      // Turned off: streaming continues through it.
-      if (withSkipped) yield { startAt: Math.max(start, t), endAt: Math.max(start, t) + len, overdue: false, occ, adjusted, skipped: true };
-      continue;
-    }
     const restStart = Math.max(start, t);
     yield { startAt: restStart, endAt: restStart + len, overdue: start < now && !s.rest.active, occ, adjusted };
     t = restStart + len;
   }
 }
 
-/** The next rest slot for the panel, including one that was turned off (so it can be turned on again). */
+/** The next rest slot for the panel (not cut at the end, shown even while rests are hidden). */
 export function nextRestSlot(s: RestInputs, now: number): ProjectedRest | undefined {
-  for (const r of restWindows(s, now, true)) return r;
+  for (const r of restWindows(s, now)) return r;
   return undefined;
 }
 
-/** Rests starting before `until`. Doesn't need (or reveal) the remaining time. */
+/**
+ * Rests starting before `until`, as viewers see them. Doesn't need (or reveal) the remaining time.
+ * While rests are hidden only the current one is left.
+ */
 export function projectRests(s: RestInputs, now: number, until: number): RestPlan {
   const projectedRests: ProjectedRest[] = [];
+  if (s.restsHidden) return { projectedRests, currentRest: currentRestOf(s, now) };
   for (const r of restWindows(s, now)) {
     if (r.startAt >= until) break;
     projectedRests.push(r);

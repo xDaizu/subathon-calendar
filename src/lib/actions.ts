@@ -89,23 +89,18 @@ export const startRest: Action = (st, now) => {
   const stopped = stopLiveEvents(st, now);
   const frozen = setTimer(stopped, currentRemaining(clockOf(stopped), now), now);
   // A rest changed by hand: its wake-up time applies if we go to rest around its start.
-  // Going to rest also clears an "off" switch for that rest (it's being taken after all).
   const ov = frozen.pub.restOverride;
   const dur = frozen.pub.restStandard.durationMin * MIN;
   const ovStart = ov?.startAt ?? ov?.forOcc ?? 0;
   const ovEnd = ov?.endAt ?? ovStart + dur;
   const near = ov != null && now >= ovStart - REST_CONSUME_WINDOW && now < ovEnd;
-  const useOv = near && !ov.skipped && ov.endAt != null;
+  const useOv = near && ov.endAt != null;
   const pub: Subathon = {
     ...frozen.pub,
     rest: { active: true, startedAt: now, plannedEndAt: useOv ? ovEnd : now + dur },
   };
-  let priv = frozen.priv;
-  if (ov && (near || ovEnd <= now)) {
-    delete pub.restOverride;
-    priv = withoutStash(priv);
-  }
-  return { pub: touch(pub, now), priv };
+  if (ov && (near || ovEnd <= now)) delete pub.restOverride;
+  return { ...frozen, pub: touch(pub, now) };
 };
 
 export const stopRest: Action = (st, now) => {
@@ -135,68 +130,39 @@ export const setWake =
     return adjustWake(at - (r.plannedEndAt ?? r.startedAt ?? now))(st, now);
   };
 
-function withoutStash(priv: FullState['priv']): FullState['priv'] {
-  if (!priv.restStash) return priv;
-  const next = { ...priv };
-  delete next.restStash;
-  return next;
-}
-
 function withoutOverride(pub: Subathon): Subathon {
   const next = { ...pub };
   delete next.restOverride;
   return next;
 }
 
-/** The one-off change that applies to occurrence `occ`, if any. */
-const overrideFor = (st: FullState, occ: number) =>
-  overrideMatches(st.pub.restOverride, occ) ? st.pub.restOverride : undefined;
-
-/**
- * Change start/end of one upcoming standard rest. If it's turned off, the times are kept
- * privately and it stays off (the public doc never holds times viewers can't see).
- */
+/** Change start/end of one upcoming standard rest. */
 export const planRest =
   (forOcc: number, startAt: number, endAt: number): Action =>
   (st, now) => {
+    const cur = overrideMatches(st.pub.restOverride, forOcc) ? st.pub.restOverride : undefined;
     const times = { startAt, endAt: Math.max(endAt, startAt + 15 * MIN) };
-    const cur = overrideFor(st, forOcc);
-    if (cur?.skipped) return { ...st, priv: { ...st.priv, restStash: { forOcc: cur.forOcc, ...times } } };
-    return { ...st, pub: touch({ ...st.pub, restOverride: { forOcc, ...times } }, now) };
+    return { ...st, pub: touch({ ...st.pub, restOverride: { forOcc: cur?.forOcc ?? forOcc, ...times } }, now) };
   };
 
 /**
- * Turn one upcoming rest off/on. Off: the public doc only says "skipped" (no times); any adjusted
- * times move to the private doc. On: they come back.
+ * Hide/show planned rests on the overlay. Viewers only: the panel still plans them and counts
+ * them in the end estimate. Stays until changed by hand.
  */
-export const setRestSkipped =
-  (slot: { occ: number }, skipped: boolean): Action =>
+export const setRestsHidden =
+  (hidden: boolean): Action =>
   (st, now) => {
-    const cur = overrideFor(st, slot.occ);
-    const forOcc = cur?.forOcc ?? slot.occ;
-    if (skipped) {
-      if (cur?.skipped) return st;
-      const priv =
-        cur?.startAt != null && cur.endAt != null
-          ? { ...st.priv, restStash: { forOcc, startAt: cur.startAt, endAt: cur.endAt } }
-          : withoutStash(st.priv);
-      return { pub: touch({ ...st.pub, restOverride: { forOcc, skipped: true } }, now), priv };
-    }
-    if (!cur?.skipped) return st;
-    const stash = overrideMatches(st.priv.restStash, slot.occ) ? st.priv.restStash : undefined;
-    const pub = stash
-      ? { ...st.pub, restOverride: { forOcc, startAt: stash.startAt, endAt: stash.endAt } }
-      : withoutOverride(st.pub);
-    return { pub: touch(pub, now), priv: withoutStash(st.priv) };
+    const pub = { ...st.pub };
+    if (hidden) pub.restsHidden = true;
+    else delete pub.restsHidden;
+    // Older documents could turn a single rest off: that switch is gone.
+    if (pub.restOverride && 'skipped' in pub.restOverride) delete pub.restOverride;
+    return { ...st, pub: touch(pub, now) };
   };
 
-/** Back to the usual times. A rest that is turned off stays off. */
-export const clearRestPlan: Action = (st, now) => {
-  const cur = st.pub.restOverride;
-  if (!cur) return st;
-  if (cur.skipped) return { ...st, priv: withoutStash(st.priv) };
-  return { ...st, pub: touch(withoutOverride(st.pub), now) };
-};
+/** Back to the usual times. */
+export const clearRestPlan: Action = (st, now) =>
+  st.pub.restOverride ? { ...st, pub: touch(withoutOverride(st.pub), now) } : st;
 
 // ───────────── Events ─────────────
 

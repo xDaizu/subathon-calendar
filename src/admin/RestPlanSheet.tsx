@@ -2,7 +2,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { useEffect, useState } from 'react';
 import { useT } from '../i18n';
 import * as A from '../lib/actions';
-import { MIN, nextRestSlot, overrideMatches, type ProjectedRest } from '../lib/schedule';
+import { MIN, nextRestSlot, type ProjectedRest } from '../lib/schedule';
 import { atTimeNear, formatDayShort, formatDuration, formatTime, hhmmToMinutes } from '../lib/time';
 import { dayKey } from '../lib/tz';
 import { Button, inputCls, Sheet } from '../ui/ui';
@@ -11,18 +11,10 @@ import { useAdmin } from './context';
 const STEPS = [-30, -15, 15, 30].map((m) => m * MIN);
 const minuteFloor = (t: number) => Math.floor(t / MIN) * MIN;
 
-/**
- * The next rest slot (public projection, not cut at the end), even if turned off.
- * A turned-off rest shows its privately kept adjusted times, if any.
- */
+/** The next rest slot (not cut at the end), also while rests are hidden from the overlay. */
 export function useNextRest(): ProjectedRest | undefined {
-  const { s, priv, now } = useAdmin();
-  const slot = nextRestSlot(s, now);
-  const stash = priv.restStash;
-  if (slot?.skipped && stash && overrideMatches(stash, slot.occ)) {
-    return { ...slot, startAt: stash.startAt, endAt: stash.endAt, adjusted: true };
-  }
-  return slot;
+  const { s, now } = useAdmin();
+  return nextRestSlot(s, now);
 }
 
 /** "sáb 21 · 03:00" — the day only when it isn't today. */
@@ -105,7 +97,7 @@ export function RestPlanSheet({ open, onOpenChange }: { open: boolean; onOpenCha
         <TimeRow label={t('restPlanStart')} hint={t('restPlanStartHint')} value={start} onChange={moveStart} />
       )}
       <TimeRow label={t('restPlanEnd')} value={end} onChange={moveEnd} />
-      {!resting && next?.skipped && <div className="mb-2 text-center text-xs text-amber-300">{t('restPlanSkippedNote')}</div>}
+      {!resting && s.restsHidden && <div className="mb-2 text-center text-xs text-amber-300">{t('restsHiddenNote')}</div>}
       <div className="mt-1 text-center text-sm text-ink-300">
         {when(start)} → {when(end)} ·{' '}
         <span className="font-display font-semibold text-ink-100">{formatDuration(end - start, lang, { seconds: false })}</span>

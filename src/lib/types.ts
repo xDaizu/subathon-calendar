@@ -32,25 +32,13 @@ export interface RestState {
   plannedEndAt?: number;
 }
 
-/**
- * One-off change to a single upcoming standard rest. Public, so it only ever holds what viewers
- * see: either new times ("tonight 05:00–12:00") or `skipped` alone (no times).
- */
+/** One-off change to the times of a single upcoming standard rest ("tonight 05:00–12:00"). */
 export interface RestOverride {
   /** The standard occurrence (epoch ms) it applies to. Matches the nearest occurrence (±12h),
    *  so it survives changes to the usual rest time or timezone. */
   forOcc: number;
   startAt?: number;
   endAt?: number;
-  /** Turned off. Stays off until turned on by hand (or by actually going to rest). */
-  skipped?: boolean;
-}
-
-/** Adjusted times of a rest that is turned off, kept privately until it's turned on again. */
-export interface RestStash {
-  forOcc: number;
-  startAt: number;
-  endAt: number;
 }
 
 export interface Interval {
@@ -104,6 +92,9 @@ export interface Subathon {
   tzLabel?: { es: string; en: string };
   rest: RestState;
   restOverride?: RestOverride;
+  /** Planned rests aren't shown on the overlay (the panel still plans them and counts them in
+   *  the end estimate). Past rests and the current one still show. */
+  restsHidden?: boolean;
   restLog: Interval[];
   events: PlannedEvent[];
   /** Current sub count (drives the unlocks). Missing in older documents: 0. */
@@ -131,7 +122,6 @@ export interface Private {
   /** Hidden unlocks: not on stream until revealed. */
   unlocks?: Unlock[];
   timer: Timer;
-  restStash?: RestStash;
 }
 
 export interface FullState {

@@ -354,60 +354,37 @@ describe('adjusting the next rest', () => {
   });
 });
 
-describe('turning the next rest off', () => {
-  it('drops it from the overlay and the end estimate; the panel still sees it; on again restores it', () => {
-    let st = full(base({ remainingMs: 20 * HOUR }));
-    const now = at(20, 12);
-    const slot = nextRestSlot(st.pub, now)!;
-    expect(slot.startAt).toBe(at(21, 3));
-    expect(slot.skipped).toBeFalsy();
-    st = A.setRestSkipped(slot, true)(st, now);
-    expect(projectRests(st.pub, now, now + DAY).projectedRests).toEqual([]);
-    expect(projectSchedule(clock(st), now)).toMatchObject({ estimatedEndAt: at(21, 8), projectedRests: [] });
-    expect(nextRestSlot(st.pub, now)).toMatchObject({ startAt: at(21, 3), skipped: true });
-    st = A.setRestSkipped(slot, false)(st, now);
-    expect(st.pub.restOverride).toBeUndefined(); // back to plain standard
-    expect(projectSchedule(clock(st), now).estimatedEndAt).toBe(at(21, 16));
-  });
-  it('keeps adjusted times when turned off and on', () => {
-    let st = full(base());
-    const now = at(20, 12);
-    st = A.planRest(at(21, 3), at(21, 5), at(21, 12))(st, now);
-    st = A.setRestSkipped(nextRestSlot(st.pub, now)!, true)(st, now);
-    st = A.setRestSkipped(nextRestSlot(st.pub, now)!, false)(st, now);
-    expect(st.pub.restOverride).toEqual({ forOcc: at(21, 3), startAt: at(21, 5), endAt: at(21, 12) });
-  });
-  it('resting anyway around it uses the usual duration and clears the switch', () => {
-    let st = full(base());
-    st = A.setRestSkipped(nextRestSlot(st.pub, at(20, 12))!, true)(st, at(20, 12));
-    st = A.startRest(st, at(21, 3, 30));
-    expect(st.pub.rest.plannedEndAt).toBe(at(21, 11, 30));
-    expect(st.pub.restOverride).toBeUndefined();
-  });
-});
-
-describe('a rest turned off stays off', () => {
+describe('hiding rests from the overlay', () => {
   const now = at(20, 12);
-  const isOff = (st: FullState, t = now) => nextRestSlot(st.pub, t)?.skipped === true && projectRests(st.pub, t, t + DAY).projectedRests.length === 0;
-  const off = (st: FullState) => A.setRestSkipped(nextRestSlot(st.pub, now)!, true)(st, now);
+  const hide = A.setRestsHidden(true);
+  const shown = (st: FullState, t = now) => projectRests(st.pub, t, t + 3 * DAY).projectedRests;
 
-  it('…when the usual rest time or timezone changes', () => {
-    let st = off(full(base()));
-    st = A.updateSettings({ restStandard: { startMinutes: 1 * 60, durationMin: 7 * 60 } })(st, now);
-    expect(isOff(st)).toBe(true);
-    st = A.updateSettings({ tz: 'Atlantic/Canary' })(st, now);
-    expect(isOff(st)).toBe(true);
+  it('hides every planned rest, not just the next one; the panel still plans them', () => {
+    const st0 = full(base({ remainingMs: 60 * HOUR }));
+    const st = hide(st0, now);
+    expect(st.pub.restsHidden).toBe(true);
+    expect(shown(st0).length).toBeGreaterThan(1);
+    expect(shown(st)).toEqual([]);
+    expect(callouts(st.pub, projectRests(st.pub, now, now + 2 * DAY), now)).toEqual([{ kind: 'none' }]);
+    // End estimate and the panel's next rest don't change.
+    expect(projectSchedule(clock(st), now)).toEqual(projectSchedule(clock(st0), now));
+    expect(nextRestSlot(st.pub, now)).toMatchObject({ startAt: at(21, 3) });
   });
-  it('…when its times are edited or reset to usual', () => {
-    let st = off(full(base()));
-    st = A.planRest(at(21, 3), at(21, 5), at(21, 12))(st, now);
-    expect(isOff(st)).toBe(true);
-    st = A.clearRestPlan(st, now);
-    expect(isOff(st)).toBe(true);
+  it('still shows the current rest and past ones', () => {
+    let st = hide(full(base({ remainingMs: 60 * HOUR })), now);
+    st = A.startRest(st, at(21, 3));
+    expect(projectRests(st.pub, at(21, 4), at(23, 4)).currentRest).toMatchObject({ startAt: at(21, 3) });
+    expect(restDisplayState(st.pub, at(21, 4)).state).toBe('resting');
+    st = A.stopRest(st, at(21, 11));
+    expect(st.pub.restLog).toEqual([{ startAt: at(21, 3), endAt: at(21, 11) }]);
+    expect(st.pub.restsHidden).toBe(true); // resting doesn't turn it off
+    expect(shown(st, at(21, 12))).toEqual([]);
   });
-  it('…through any other panel action', () => {
-    let st = off(full(base({ events: [ev()] })));
+  it('stays hidden through any other panel action', () => {
+    let st = hide(full(base({ events: [ev()] })), now);
     for (const action of [
+      A.planRest(at(21, 3), at(21, 5), at(21, 12)),
+      A.clearRestPlan,
       A.setRemaining(30 * HOUR),
       A.adjustRemaining(HOUR),
       A.upsertEvent(ev({ id: 'e2' }), true),
@@ -415,29 +392,26 @@ describe('a rest turned off stays off', () => {
       A.startEvent('e1'),
       A.delayEvent('e2', 15 * MIN),
       A.stopEvent('e1'),
-      A.updateSettings({ title: 'X', startAt: at(20, 9) }),
+      A.updateSettings({ title: 'X', startAt: at(20, 9), restStandard: { startMinutes: 60, durationMin: 7 * 60 } }),
       A.markEnded,
     ]) {
       st = action(st, now);
-      expect(isOff(st)).toBe(true);
+      expect(st.pub.restsHidden).toBe(true);
+      expect(shown(st)).toEqual([]);
     }
   });
-  it('the public doc only says "skipped": adjusted times are kept privately and come back when turned on', () => {
-    let st = full(base());
+  it('times adjusted while hidden show once rests are shown again', () => {
+    let st = hide(full(base({ remainingMs: 60 * HOUR })), now);
     st = A.planRest(at(21, 3), at(21, 5), at(21, 12))(st, now);
-    st = off(st);
-    expect(st.pub.restOverride).toEqual({ forOcc: at(21, 3), skipped: true });
-    expect(st.priv.restStash).toEqual({ forOcc: at(21, 3), startAt: at(21, 5), endAt: at(21, 12) });
-    st = A.planRest(at(21, 3), at(21, 6), at(21, 13))(st, now); // edited while off
-    expect(st.pub.restOverride).toEqual({ forOcc: at(21, 3), skipped: true });
-    st = A.setRestSkipped(nextRestSlot(st.pub, now)!, false)(st, now);
-    expect(st.pub.restOverride).toEqual({ forOcc: at(21, 3), startAt: at(21, 6), endAt: at(21, 13) });
-    expect(st.priv.restStash).toBeUndefined();
+    expect(shown(st)).toEqual([]);
+    st = A.setRestsHidden(false)(st, now);
+    expect(st.pub.restsHidden).toBeUndefined();
+    expect(shown(st)[0]).toMatchObject({ startAt: at(21, 5), endAt: at(21, 12), adjusted: true });
+    expect(shown(st)[1]).toMatchObject({ startAt: at(22, 3) });
   });
-  it('going to rest anyway turns it back on (clears the switch and the private times)', () => {
-    let st = off(A.planRest(at(21, 3), at(21, 5), at(21, 12))(full(base()), now));
-    st = A.startRest(st, at(21, 4));
-    expect(st.pub.restOverride).toBeUndefined();
-    expect(st.priv.restStash).toBeUndefined();
+  it('drops the old one-rest "off" switch from older documents', () => {
+    const st0 = full(base());
+    st0.pub.restOverride = { forOcc: at(21, 3), skipped: true } as never;
+    expect(A.setRestsHidden(true)(st0, now).pub.restOverride).toBeUndefined();
   });
 });

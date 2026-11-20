@@ -29,6 +29,7 @@ export function LiveToggles() {
   const rest = restDisplayState(s, now);
   const resting = rest.state !== 'awake';
   const nextRest = useNextRest();
+  const restsHidden = !!s.restsHidden;
   const when = useWhen();
   const [planOpen, setPlanOpen] = useState(false);
 
@@ -101,19 +102,20 @@ export function LiveToggles() {
         </div>
         <div className="relative mb-1 flex min-h-9 items-center justify-between gap-2">
           <span className="font-semibold">{resting ? t('restOn') : t('restOff')}</span>
-          {!resting && nextRest && (
+          {!resting && (nextRest || restsHidden) && (
             <button
-              aria-label={nextRest.skipped ? t('restSkipOn') : t('restSkipOff')}
-              aria-pressed={!nextRest.skipped}
+              aria-label={restsHidden ? t('restsShow') : t('restsHide')}
+              title={restsHidden ? t('restsShow') : t('restsHide')}
+              aria-pressed={!restsHidden}
               onClick={() =>
-                act(A.setRestSkipped(nextRest, !nextRest.skipped), nextRest.skipped ? t('toastRestOn') : t('toastRestOff'))
+                act(A.setRestsHidden(!restsHidden), restsHidden ? t('toastRestsShown') : t('toastRestsHidden'))
               }
               className={cx(
                 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base transition active:scale-90',
-                nextRest.skipped ? 'bg-amber-400/15 ring-1 ring-amber-300/40' : 'bg-ink-700/70',
+                restsHidden ? 'bg-amber-400/15 ring-1 ring-amber-300/40' : 'bg-ink-700/70',
               )}
             >
-              {nextRest.skipped ? '🙈' : '👁'}
+              {restsHidden ? '🙈' : '👁'}
             </button>
           )}
         </div>
@@ -128,15 +130,18 @@ export function LiveToggles() {
           ) : (
             nextRest && (
               <button className="block w-full text-left" onClick={() => setPlanOpen(true)}>
-                <span className={cx(nextRest.skipped && 'line-through opacity-60')}>
+                <span className={cx(restsHidden && 'opacity-60')}>
                   {t('nextRestAt', { from: when(nextRest.startAt), to: formatTime(nextRest.endAt, lang, s.tz) })}
                 </span>
-                {nextRest.skipped ? (
-                  <span className="mt-0.5 block w-fit rounded bg-amber-400/15 px-1 font-semibold text-amber-300">{t('restSkipped')}</span>
-                ) : (
-                  nextRest.adjusted && (
-                    <span className="mt-0.5 block w-fit rounded bg-night/25 px-1 font-semibold text-indigo-200">{t('adjusted')}</span>
-                  )
+                {(restsHidden || nextRest.adjusted) && (
+                  <span className="mt-0.5 flex flex-wrap gap-1">
+                    {restsHidden && (
+                      <span className="rounded bg-amber-400/15 px-1 font-semibold text-amber-300">{t('restsHiddenBadge')}</span>
+                    )}
+                    {nextRest.adjusted && (
+                      <span className="rounded bg-night/25 px-1 font-semibold text-indigo-200">{t('adjusted')}</span>
+                    )}
+                  </span>
                 )}
               </button>
             )
