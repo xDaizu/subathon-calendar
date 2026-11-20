@@ -16,14 +16,23 @@ export interface EditTarget {
   hidden: boolean;
 }
 
+/** Starting values for a new event (e.g. one created from an unlock). */
+export interface EventPrefill {
+  title: string;
+  emoji?: string;
+  fromUnlock?: string;
+}
+
 export function EventSheet({
   open,
   onOpenChange,
   editing,
+  prefill,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   editing?: EditTarget | null;
+  prefill?: EventPrefill | null;
 }) {
   const { s, priv, now, act } = useAdmin();
   const { t, lang } = useT();
@@ -52,15 +61,15 @@ export function EventSheet({
     } else {
       // Default: next full hour.
       const nextHour = Math.ceil((Date.now() + 10 * MIN) / HOUR) * HOUR;
-      setTitle('');
-      setEmoji('🎮');
+      setTitle(prefill?.title ?? '');
+      setEmoji(prefill ? prefill.emoji : '🎮');
       setColor(EVENT_COLORS[(s.events.length + priv.events.length) % EVENT_COLORS.length]);
       setDay(dayKey(nextHour, tz));
       setTime(minutesToHHMM(minutesOfDay(nextHour, tz)));
       setDuration(2 * HOUR);
       setVisible(true);
     }
-  }, [open, editing]);
+  }, [open, editing, prefill]);
 
   const chips = useMemo(() => dayChips(now, lang, tz), [now, lang, tz]);
   const recentTitles = useMemo(() => {
@@ -73,6 +82,11 @@ export function EventSheet({
     return [...seen.values()].slice(0, 8);
   }, [s.events, priv.events]);
 
+  // An unlock's emoji may not be one of the event emojis: keep it pickable.
+  const emojis = emoji && !EVENT_EMOJIS.includes(emoji) ? [emoji, ...EVENT_EMOJIS] : EVENT_EMOJIS;
+  const linkedId = editing ? editing.ev.fromUnlock : prefill?.fromUnlock;
+  const linkedUnlock = linkedId ? [...(s.unlocks ?? []), ...(priv.unlocks ?? [])].find((u) => u.id === linkedId) : undefined;
+
   const minutes = hhmmToMinutes(time);
   const valid = title.trim().length > 0 && minutes != null;
   const durations = DURATIONS.includes(duration) ? DURATIONS : [...DURATIONS, duration].sort((a, b) => a - b);
@@ -80,7 +94,14 @@ export function EventSheet({
   const save = () => {
     if (!valid || minutes == null) return;
     const startAt = zonedTime(day, minutes, tz);
-    const base: PlannedEvent = editing?.ev ?? { id: A.newEventId(), title: '', startAt, endAt: startAt, status: 'planned' };
+    const base: PlannedEvent = editing?.ev ?? {
+      id: A.newEventId(),
+      title: '',
+      startAt,
+      endAt: startAt,
+      status: 'planned',
+      ...(prefill?.fromUnlock && { fromUnlock: prefill.fromUnlock }),
+    };
     const ev: PlannedEvent = { ...base, title: title.trim(), emoji, color, startAt, endAt: startAt + duration };
     act(A.upsertEvent(ev, !visible), t('toastSaved'));
     onOpenChange(false);
@@ -139,6 +160,11 @@ export function EventSheet({
         </div>
       }
     >
+      {linkedUnlock && (
+        <div className="mb-4 rounded-xl bg-accent/10 px-3 py-2 text-sm text-violet-200 ring-1 ring-accent/20">
+          🔓 {t('fromUnlock', { title: `${linkedUnlock.emoji ?? '🎁'} ${linkedUnlock.title}` })}
+        </div>
+      )}
       <Field label={t('eventTitle')}>
         <input
           className={inputCls}
@@ -148,7 +174,7 @@ export function EventSheet({
           onKeyDown={(e) => e.key === 'Enter' && save()}
         />
       </Field>
-      {!editing && recentTitles.length > 0 && (
+      {!editing && !prefill && recentTitles.length > 0 && (
         <div className="-mt-2 mb-4 flex gap-2 overflow-x-auto pb-1">
           {recentTitles.map((r) => (
             <Chip
@@ -195,7 +221,7 @@ export function EventSheet({
 
       <Field label={t('emoji')}>
         <div className="flex flex-wrap gap-1.5">
-          {EVENT_EMOJIS.map((e) => (
+          {emojis.map((e) => (
             <button
               key={e}
               type="button"

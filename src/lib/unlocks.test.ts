@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { adjustSubs, deleteUnlock, setUnlockHidden, setUnlockSizes, setUnlockTarget, upsertUnlock } from './actions';
-import type { FullState, Unlock } from './types';
-import { progressTo, sizeOf, sortUnlocks, suggestTarget, unlockedCount, unlockViewOf, visibleRange } from './unlocks';
+import type { FullState, PlannedEvent, Unlock } from './types';
+import { eventsByUnlock, progressTo, sizeOf, sortUnlocks, suggestTarget, unlockedCount, unlockViewOf, visibleRange } from './unlocks';
 
 const u = (id: string, target: number): Unlock => ({ id, title: id, target });
 const list = sortUnlocks([u('c', 30), u('a', 10), u('e', 50), u('b', 20), u('d', 40), u('f', 60), u('g', 70)]);
@@ -67,7 +67,7 @@ describe('suggestTarget', () => {
 });
 
 describe('actions', () => {
-  const st = { pub: { subs: 3, unlocks: [u('a', 10)] }, priv: {} } as unknown as FullState;
+  const st = { pub: { subs: 3, unlocks: [u('a', 10)], events: [] }, priv: { events: [] } } as unknown as FullState;
   it('adjustSubs never goes below 0', () => {
     expect(adjustSubs(5)(st, 1).pub.subs).toBe(8);
     expect(adjustSubs(-10)(st, 1).pub.subs).toBe(0);
@@ -98,6 +98,28 @@ describe('actions', () => {
     expect(setUnlockTarget('a', 12)(on, 1).pub.unlocks?.[0].size).toBe('XL');
     expect(setUnlockHidden('a', true)(on, 1).priv.unlocks?.[0].size).toBe('XL');
     expect(setUnlockSizes(false)(on, 1).pub.unlocks?.[0].size).toBe('XL');
+  });
+});
+
+describe('events created from unlocks', () => {
+  const ev = (id: string, fromUnlock?: string): PlannedEvent => ({ id, title: id, startAt: 0, endAt: 1, status: 'planned', fromUnlock });
+  it('maps each unlock to its event, public first', () => {
+    const map = eventsByUnlock([ev('e1', 'a'), ev('e2')], [ev('e3', 'b'), ev('e4', 'a')]);
+    expect(map.get('a')).toEqual({ ev: ev('e1', 'a'), hidden: false });
+    expect(map.get('b')).toEqual({ ev: ev('e3', 'b'), hidden: true });
+    expect(map.size).toBe(2);
+  });
+  it('deleting the unlock keeps its events, just unlinked', () => {
+    const st = {
+      pub: { unlocks: [u('a', 10)], events: [ev('e1', 'a'), ev('e2', 'b')] },
+      priv: { unlocks: [], events: [ev('e3', 'a')] },
+    } as unknown as FullState;
+    const next = deleteUnlock('a')(st, 1);
+    expect(next.pub.unlocks).toEqual([]);
+    expect(next.pub.events.map((e) => e.id)).toEqual(['e1', 'e2']);
+    expect(next.pub.events[0]).not.toHaveProperty('fromUnlock');
+    expect(next.pub.events[1].fromUnlock).toBe('b');
+    expect(next.priv.events[0]).not.toHaveProperty('fromUnlock');
   });
 });
 

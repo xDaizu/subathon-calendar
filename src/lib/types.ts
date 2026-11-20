@@ -15,6 +15,8 @@ export interface PlannedEvent {
   status: EventStatus;
   actualStartAt?: number;
   actualEndAt?: number;
+  /** Id of the unlock this event was created from (the unlock shows it has an event). */
+  fromUnlock?: string;
 }
 
 export interface RestStandard {

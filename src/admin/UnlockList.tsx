@@ -3,9 +3,11 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useT } from '../i18n';
 import * as A from '../lib/actions';
 import { UNLOCK_EMOJIS } from '../lib/colors';
+import { formatDayShort, formatTime } from '../lib/time';
 import type { Unlock, UnlockSize, UnlockView } from '../lib/types';
 import {
   DEFAULT_UNLOCK_SIZE,
+  eventsByUnlock,
   MAX_UNLOCK_VIEW,
   sizeOf,
   sortUnlocks,
@@ -18,6 +20,7 @@ import {
 import { Button, cx, Field, inputCls, Sheet, Switch } from '../ui/ui';
 import { useAdmin } from './context';
 import { AddRowButton } from './EventList';
+import { EventSheet, type EditTarget, type EventPrefill } from './EventSheet';
 import { OverlayFrame } from './Preview';
 
 interface Row {
@@ -25,13 +28,23 @@ interface Row {
   hidden: boolean;
 }
 
+/** Event sheet opened from an unlock: edit its event, or create one. */
+type EventSheetState = { editing: EditTarget } | { prefill: EventPrefill };
+
 /** Unlocks tab of the lists card. `tabs` goes in the header. */
 export function UnlockList({ tabs }: { tabs: ReactNode }) {
   const { s, priv, act } = useAdmin();
-  const { t } = useT();
+  const { t, lang } = useT();
   const [editing, setEditing] = useState<Row | null>(null);
   const [adding, setAdding] = useState(false);
+  const [eventSheet, setEventSheet] = useState<EventSheetState | null>(null);
   const [previewOpen, setPreviewOpen] = useState(true);
+  const linked = useMemo(() => eventsByUnlock(s.events, priv.events), [s.events, priv.events]);
+
+  const openEventFor = (u: Unlock) => {
+    const found = linked.get(u.id);
+    setEventSheet(found ? { editing: found } : { prefill: { title: u.title, emoji: u.emoji ?? '🎁', fromUnlock: u.id } });
+  };
 
   const subs = s.subs ?? 0;
   const view = unlockViewOf(s);
@@ -81,6 +94,7 @@ export function UnlockList({ tabs }: { tabs: ReactNode }) {
             const done = u.target <= subs;
             const isNext = u.id === nextId;
             const size = sizeOf(u, s);
+            const ev = linked.get(u.id)?.ev;
             return (
               <motion.li
                 key={u.id}
@@ -127,6 +141,15 @@ export function UnlockList({ tabs }: { tabs: ReactNode }) {
                       )}
                       {hidden && <Badge>🙈 {t('hidden')}</Badge>}
                       {onScreenIds.has(u.id) && <Badge>📺 {t('onScreen')}</Badge>}
+                      {ev && (
+                        <Badge tone="event">
+                          📅{' '}
+                          <span className={cx('tabular', ev.status === 'skipped' && 'line-through')}>
+                            {formatDayShort(ev.startAt, lang, s.tz)} · {formatTime(ev.startAt, lang, s.tz)}
+                          </span>
+                          {ev.status === 'done' && ' ✓'}
+                        </Badge>
+                      )}
                     </span>
                   </span>
                 </button>
@@ -143,6 +166,18 @@ export function UnlockList({ tabs }: { tabs: ReactNode }) {
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ink-700/70 text-lg transition active:scale-90"
                 >
                   {hidden ? '🙈' : '👁'}
+                </button>
+                <button
+                  aria-label={t(ev ? 'openUnlockEvent' : 'createUnlockEvent')}
+                  title={t(ev ? 'openUnlockEvent' : 'createUnlockEvent')}
+                  onClick={() => openEventFor(u)}
+                  className={cx(
+                    'relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg transition active:scale-90',
+                    ev ? 'bg-cyan-400/15 ring-1 ring-cyan-400/30' : 'bg-ink-700/70',
+                  )}
+                >
+                  📅
+                  {ev && <span className="absolute -right-1 -bottom-1 text-xs">✅</span>}
                 </button>
               </motion.li>
             );
@@ -181,16 +216,26 @@ export function UnlockList({ tabs }: { tabs: ReactNode }) {
         editing={editing}
         rows={rows}
       />
+      <EventSheet
+        open={!!eventSheet}
+        onOpenChange={(o) => !o && setEventSheet(null)}
+        editing={eventSheet && 'editing' in eventSheet ? eventSheet.editing : null}
+        prefill={eventSheet && 'prefill' in eventSheet ? eventSheet.prefill : null}
+      />
     </>
   );
 }
 
-function Badge({ children, tone }: { children: ReactNode; tone?: 'accent' }) {
+function Badge({ children, tone }: { children: ReactNode; tone?: 'accent' | 'event' }) {
   return (
     <span
       className={cx(
         'rounded-md px-1.5 py-px text-[0.68rem] font-semibold',
-        tone === 'accent' ? 'bg-accent/15 text-violet-200' : 'bg-white/5 text-ink-300',
+        tone === 'accent'
+          ? 'bg-accent/15 text-violet-200'
+          : tone === 'event'
+            ? 'bg-cyan-400/15 text-cyan-200'
+            : 'bg-white/5 text-ink-300',
       )}
     >
       {children}

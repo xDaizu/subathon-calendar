@@ -321,12 +321,21 @@ function findUnlock(st: FullState, id: string): { u: Unlock; hidden: boolean } |
   return privU ? { u: privU, hidden: true } : undefined;
 }
 
+/** Events created from it stay, just no longer linked. */
 export const deleteUnlock =
   (id: string): Action =>
-  (st, now) => ({
-    pub: touch({ ...st.pub, unlocks: (st.pub.unlocks ?? []).filter((x) => x.id !== id) }, now),
-    priv: { ...st.priv, unlocks: (st.priv.unlocks ?? []).filter((x) => x.id !== id) },
-  });
+  (st, now) => {
+    const unlinked = mapEvents(st, (e) => {
+      if (e.fromUnlock !== id) return e;
+      const r = { ...e };
+      delete r.fromUnlock;
+      return r;
+    });
+    return {
+      pub: touch({ ...unlinked.pub, unlocks: (unlinked.pub.unlocks ?? []).filter((x) => x.id !== id) }, now),
+      priv: { ...unlinked.priv, unlocks: (unlinked.priv.unlocks ?? []).filter((x) => x.id !== id) },
+    };
+  };
 
 export const setUnlockHidden =
   (id: string, hidden: boolean): Action =>

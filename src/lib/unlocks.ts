@@ -1,5 +1,16 @@
 /** Pure helpers for the unlocks (rewards by sub count). Shared by the panel and the overlay. */
-import type { Subathon, Unlock, UnlockSize, UnlockView } from './types';
+import type { PlannedEvent, Subathon, Unlock, UnlockSize, UnlockView } from './types';
+
+/** The event created from each unlock (unlock id → event). Public events win over hidden ones. */
+export function eventsByUnlock(
+  pubEvents: PlannedEvent[],
+  hiddenEvents: PlannedEvent[],
+): Map<string, { ev: PlannedEvent; hidden: boolean }> {
+  const map = new Map<string, { ev: PlannedEvent; hidden: boolean }>();
+  for (const ev of pubEvents) if (ev.fromUnlock && !map.has(ev.fromUnlock)) map.set(ev.fromUnlock, { ev, hidden: false });
+  for (const ev of hiddenEvents) if (ev.fromUnlock && !map.has(ev.fromUnlock)) map.set(ev.fromUnlock, { ev, hidden: true });
+  return map;
+}
 
 /** Default: the latest unlocked + the 2 before it, and the 2 next. */
 export const DEFAULT_UNLOCK_VIEW: UnlockView = { past: 3, next: 2 };
