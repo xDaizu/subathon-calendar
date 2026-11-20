@@ -16,6 +16,7 @@ import {
   restDisplayState,
   visibleEvents,
 } from './schedule';
+import { normalize } from './store';
 import { zonedTime } from './tz';
 import type { Clock, FullState, PlannedEvent } from './types';
 
@@ -409,13 +410,54 @@ describe('hiding rests from the overlay', () => {
     expect(shown(st)[0]).toMatchObject({ startAt: at(21, 5), endAt: at(21, 12), adjusted: true });
     expect(shown(st)[1]).toMatchObject({ startAt: at(22, 3) });
   });
-  it('the old one-rest "off" switch (older documents, stale panels) also hides every rest', () => {
-    const st0 = full(base({ remainingMs: 60 * HOUR }));
-    st0.pub.restOverride = { forOcc: at(21, 3), skipped: true } as never;
-    expect(shown(st0)).toEqual([]);
-    const st = A.setRestsHidden(false)(st0, now);
+  it('events planned inside a hidden rest stay off the overlay', () => {
+    const s = hide(full(base({ remainingMs: 60 * HOUR, events: [ev({ id: 'night', startAt: at(21, 5), endAt: at(21, 6) }), ev()] })), now).pub;
+    const plan = projectRests(s, now, now + 2 * DAY);
+    expect(plan.projectedRests).toEqual([]);
+    expect(visibleEvents(s.events, plan, now).map((e) => e.id)).toEqual(['e1']);
+  });
+});
+
+describe('old one-rest "off" switch (older documents, panels not reloaded)', () => {
+  const now = at(20, 12);
+  // Exactly what the old panel wrote: public `skipped` with no times, adjusted times kept privately.
+  const legacy = (stash?: { forOcc: number; startAt: number; endAt: number }) => {
+    const { pub, priv } = full(base({ remainingMs: 60 * HOUR, events: [ev()] }));
+    return normalize({ ...pub, restOverride: { forOcc: at(21, 3), skipped: true } } as never, { ...priv, restStash: stash } as never);
+  };
+  const shown = (st: FullState, t = now) => projectRests(st.pub, t, t + 3 * DAY).projectedRests;
+
+  it('reads as "rests hidden" and is rewritten', () => {
+    const { st, migrate } = legacy();
+    expect(migrate).toBe(true);
+    expect(st.pub.restsHidden).toBe(true);
     expect(st.pub.restOverride).toBeUndefined();
-    expect(shown(st)[0]).toMatchObject({ startAt: at(21, 3) });
-    expect(A.setRestsHidden(true)(st0, now).pub.restOverride).toBeUndefined();
+    expect(shown(st)).toEqual([]);
+  });
+  it('times adjusted while it was off become the plan again (still hidden)', () => {
+    const { st } = legacy({ forOcc: at(21, 3), startAt: at(21, 5), endAt: at(21, 12) });
+    expect(st.pub.restOverride).toEqual({ forOcc: at(21, 3), startAt: at(21, 5), endAt: at(21, 12) });
+    expect(st.priv).not.toHaveProperty('restStash');
+    expect(shown(st)).toEqual([]);
+    expect(shown(A.setRestsHidden(false)(st, now))[0]).toMatchObject({ startAt: at(21, 5), endAt: at(21, 12) });
+  });
+  it('no panel action brings the rests back (rest taken, times adjusted or reset)', () => {
+    for (const steps of [
+      [A.startRest, A.stopRest],
+      [A.planRest(at(21, 3), at(21, 4), at(21, 11))],
+      [A.clearRestPlan],
+      [A.startEvent('e1'), A.stopEvent('e1'), A.setRemaining(30 * HOUR)],
+    ]) {
+      let st = legacy().st;
+      let t = at(21, 3);
+      for (const step of steps) st = step(st, (t += HOUR));
+      expect(st.pub.restsHidden).toBe(true);
+      expect(shown(st, t)).toEqual([]);
+    }
+  });
+  it('a current document needs no rewrite', () => {
+    const { pub, priv } = full(base());
+    expect(normalize(pub, priv).migrate).toBe(false);
+    expect(normalize({ ...pub, restsHidden: true }, priv).migrate).toBe(false);
   });
 });

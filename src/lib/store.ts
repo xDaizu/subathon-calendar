@@ -8,7 +8,8 @@
  */
 import { doc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { getDb } from './firebase';
-import type { FullState, Private, Subathon, Timer } from './types';
+import { overrideMatches } from './schedule';
+import type { FullState, Interval, Private, RestOverride, Subathon, Timer } from './types';
 
 export const DEMO_UID = 'demo';
 
@@ -22,27 +23,48 @@ export interface Store {
   transact(uid: string, fn: (st: FullState | null) => FullState): Promise<FullState | null>;
 }
 
-// ───────────── Normalisation (older versions kept the timer in the public doc) ─────────────
+// ───────────── Normalisation of older documents ─────────────
+// Every read and write goes through here, so the rest of the app only ever sees the current layout:
+// - Older versions kept the timer in the public doc.
+// - Older versions could turn one rest "off" (`restOverride.skipped`, adjusted times kept privately
+//   in `restStash`). Now that means "rests hidden on stream" (`restsHidden`). Panels that weren't
+//   reloaded may still write it, so it's converted on every read.
 
-type RawPub = Subathon & Partial<Timer>;
-type RawPriv = Partial<Private>;
+type RawPub = Subathon & Partial<Timer> & { restOverride?: RestOverride & { skipped?: boolean } };
+type RawPriv = Partial<Private> & { restStash?: Interval & { forOcc: number } };
 
-function cleanPub(raw: RawPub): { pub: Subathon; legacyTimer?: Timer } {
+function cleanPub(raw: RawPub): { pub: Subathon; legacyTimer?: Timer; legacyOffFor?: number } {
   const { remainingMs, remainingSetAt, ...pub } = raw;
   const legacyTimer = remainingMs != null ? { remainingMs, remainingSetAt: remainingSetAt ?? Date.now() } : undefined;
-  return { pub, legacyTimer };
+  let legacyOffFor: number | undefined;
+  if (pub.restOverride?.skipped) {
+    legacyOffFor = pub.restOverride.forOcc;
+    delete pub.restOverride;
+    pub.restsHidden = true;
+  }
+  return { pub, legacyTimer, legacyOffFor };
 }
 
 function cleanPriv(raw: RawPriv | undefined, legacyTimer?: Timer): Private | null {
   const timer = raw?.timer ?? legacyTimer;
-  return timer ? { ...raw, events: raw?.events ?? [], timer } : null;
+  if (!timer) return null;
+  const { restStash: _, ...rest } = raw ?? {};
+  return { ...rest, events: raw?.events ?? [], timer };
 }
 
 /** Full state + whether it must be rewritten to drop legacy fields. */
-function normalize(rawPub: RawPub, rawPriv: RawPriv | undefined): { st: FullState; migrate: boolean } {
-  const { pub, legacyTimer } = cleanPub(rawPub);
+export function normalize(rawPub: RawPub, rawPriv: RawPriv | undefined): { st: FullState; migrate: boolean } {
+  const { pub, legacyTimer, legacyOffFor } = cleanPub(rawPub);
   const priv = cleanPriv(rawPriv, legacyTimer) ?? { events: rawPriv?.events ?? [], timer: { remainingMs: 0, remainingSetAt: Date.now() } };
-  return { st: { pub, priv }, migrate: legacyTimer != null || !rawPriv?.timer };
+  // Times adjusted while that rest was "off" become its plan again.
+  const stash = rawPriv?.restStash;
+  if (legacyOffFor != null && stash && overrideMatches(stash, legacyOffFor)) {
+    pub.restOverride = { forOcc: legacyOffFor, startAt: stash.startAt, endAt: stash.endAt };
+  }
+  return {
+    st: { pub, priv },
+    migrate: legacyTimer != null || !rawPriv?.timer || legacyOffFor != null || stash != null,
+  };
 }
 
 function stripUndefined<T>(v: T): T {

@@ -155,8 +155,6 @@ export const setRestsHidden =
     const pub = { ...st.pub };
     if (hidden) pub.restsHidden = true;
     else delete pub.restsHidden;
-    // Older documents could turn a single rest off: that switch is gone.
-    if (pub.restOverride && 'skipped' in pub.restOverride) delete pub.restOverride;
     return { ...st, pub: touch(pub, now) };
   };
 

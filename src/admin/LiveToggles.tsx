@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useT } from '../i18n';
 import * as A from '../lib/actions';
 import { eventColor } from '../lib/colors';
-import { eventDisplayState, MIN, restDisplayState, restsHidden as restsHiddenOf } from '../lib/schedule';
+import { eventDisplayState, MIN, restDisplayState } from '../lib/schedule';
 import { formatDuration, formatTime } from '../lib/time';
 import type { PlannedEvent } from '../lib/types';
 import { Button, Card, cx } from '../ui/ui';
@@ -29,7 +29,7 @@ export function LiveToggles() {
   const rest = restDisplayState(s, now);
   const resting = rest.state !== 'awake';
   const nextRest = useNextRest();
-  const restsHidden = restsHiddenOf(s);
+  const restsHidden = !!s.restsHidden;
   const when = useWhen();
   const [planOpen, setPlanOpen] = useState(false);
 

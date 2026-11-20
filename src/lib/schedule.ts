@@ -13,14 +13,6 @@ export function overrideMatches(ov: { forOcc: number } | undefined, occ: number)
   return ov != null && Math.abs(ov.forOcc - occ) < 12 * HOUR;
 }
 
-/**
- * Planned rests are hidden from viewers. Also true for the old one-rest "off" switch
- * (`restOverride.skipped`), still written by panels that weren't reloaded.
- */
-export function restsHidden(s: Pick<Subathon, 'restsHidden' | 'restOverride'>): boolean {
-  return !!s.restsHidden || !!(s.restOverride as { skipped?: boolean } | undefined)?.skipped;
-}
-
 /** What rest projection needs (all public). */
 type RestInputs = Pick<Subathon, 'startAt' | 'restStandard' | 'tz' | 'rest' | 'restLog' | 'restOverride' | 'restsHidden'>;
 /** What end estimation needs (public + private timer). */
@@ -64,6 +56,9 @@ export interface RestPlan {
   projectedRests: ProjectedRest[];
   /** Current (active) rest interval, with end = max(plannedEnd, now). */
   currentRest?: Interval & { overtime: boolean };
+  /** Planned rests hidden from viewers: not drawn or called out, but events planned inside them
+   *  are still left out (they won't happen). */
+  hiddenRests?: ProjectedRest[];
 }
 
 /** Panel-only: rest plan cut at the estimated end. */
@@ -122,16 +117,16 @@ export function nextRestSlot(s: RestInputs, now: number): ProjectedRest | undefi
 
 /**
  * Rests starting before `until`, as viewers see them. Doesn't need (or reveal) the remaining time.
- * While rests are hidden only the current one is left.
+ * While rests are hidden, planned ones move to `hiddenRests` (only the current one still shows).
  */
 export function projectRests(s: RestInputs, now: number, until: number): RestPlan {
-  const projectedRests: ProjectedRest[] = [];
-  if (restsHidden(s)) return { projectedRests, currentRest: currentRestOf(s, now) };
+  const rests: ProjectedRest[] = [];
   for (const r of restWindows(s, now)) {
     if (r.startAt >= until) break;
-    projectedRests.push(r);
+    rests.push(r);
   }
-  return { projectedRests, currentRest: currentRestOf(s, now) };
+  const currentRest = currentRestOf(s, now);
+  return s.restsHidden ? { projectedRests: [], hiddenRests: rests, currentRest } : { projectedRests: rests, currentRest };
 }
 
 /**
@@ -207,7 +202,7 @@ export function eventWarning(ev: PlannedEvent, schedule: RestPlan & { estimatedE
   if (ev.status !== 'planned') return null;
   const iv = eventInterval(ev, now);
   if (schedule.estimatedEndAt != null && iv.startAt >= schedule.estimatedEndAt) return 'afterEnd';
-  const rests: Interval[] = [...schedule.projectedRests];
+  const rests: Interval[] = [...schedule.projectedRests, ...(schedule.hiddenRests ?? [])];
   if (schedule.currentRest) rests.push(schedule.currentRest);
   if (rests.some((r) => iv.startAt >= r.startAt && iv.startAt < r.endAt)) return 'duringRest';
   return null;

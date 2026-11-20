@@ -2,7 +2,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { useEffect, useState } from 'react';
 import { useT } from '../i18n';
 import * as A from '../lib/actions';
-import { MIN, nextRestSlot, restsHidden, type ProjectedRest } from '../lib/schedule';
+import { MIN, nextRestSlot, type ProjectedRest } from '../lib/schedule';
 import { atTimeNear, formatDayShort, formatDuration, formatTime, hhmmToMinutes } from '../lib/time';
 import { dayKey } from '../lib/tz';
 import { Button, inputCls, Sheet } from '../ui/ui';
@@ -97,7 +97,7 @@ export function RestPlanSheet({ open, onOpenChange }: { open: boolean; onOpenCha
         <TimeRow label={t('restPlanStart')} hint={t('restPlanStartHint')} value={start} onChange={moveStart} />
       )}
       <TimeRow label={t('restPlanEnd')} value={end} onChange={moveEnd} />
-      {!resting && restsHidden(s) && <div className="mb-2 text-center text-xs text-amber-300">{t('restsHiddenNote')}</div>}
+      {!resting && s.restsHidden && <div className="mb-2 text-center text-xs text-amber-300">{t('restsHiddenNote')}</div>}
       <div className="mt-1 text-center text-sm text-ink-300">
         {when(start)} → {when(end)} ·{' '}
         <span className="font-display font-semibold text-ink-100">{formatDuration(end - start, lang, { seconds: false })}</span>
