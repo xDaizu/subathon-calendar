@@ -37,6 +37,7 @@ export function Overlay({ params }: { params: OverlayParams }) {
         params.preview ? 'preview-bg' : ''
       }`}
       data-theme={look.theme}
+      data-bg={look.bg}
       style={{ ['--accent' as string]: ACCENT, ['--accent2' as string]: ACCENT2 }}
     >
       <AnimatePresence mode="wait" initial={false}>

@@ -86,6 +86,8 @@ export type WindowHours = 12 | 24 | 48;
 export interface OverlayLook {
   lang: Lang;
   theme: 'dark' | 'light';
+  /** Both overlays: translucent glass cards, or fully opaque ones. */
+  bg: 'glass' | 'solid';
   /** Timeline only. */
   pos: 'top' | 'bottom';
   /** Timeline only: length of the visible time window. */

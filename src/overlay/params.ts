@@ -4,7 +4,7 @@ import type { OverlayLook, Subathon, WindowHours } from '../lib/types';
 
 export const WINDOW_HOURS: readonly WindowHours[] = [12, 24, 48];
 
-export const DEFAULT_LOOK: OverlayLook = { lang: 'es', theme: 'dark', pos: 'bottom', hours: 24 };
+export const DEFAULT_LOOK: OverlayLook = { lang: 'es', theme: 'dark', bg: 'glass', pos: 'bottom', hours: 24 };
 
 export const ACCENT = '#a855f7';
 export const ACCENT2 = '#ec4899';
@@ -27,6 +27,7 @@ export function readParams(search = window.location.search): OverlayParams {
       lang: q.get('lang') === 'en' ? 'en' : 'es',
       pos: q.get('pos') === 'top' ? 'top' : 'bottom',
       theme: q.get('theme') === 'light' ? 'light' : 'dark',
+      bg: 'glass',
       hours: (WINDOW_HOURS as readonly number[]).includes(hours) ? (hours as WindowHours) : DEFAULT_LOOK.hours,
     },
   };

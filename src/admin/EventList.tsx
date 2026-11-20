@@ -120,6 +120,9 @@ function OverlayLookCard() {
         <LookRow label={t('theme')}>
           <Segmented value={look.theme} onChange={(v) => setLook({ theme: v })} options={[{ value: 'dark', label: t('dark') }, { value: 'light', label: t('light') }]} />
         </LookRow>
+        <LookRow label={t('background')}>
+          <Segmented value={look.bg} onChange={(v) => setLook({ bg: v })} options={[{ value: 'glass', label: t('bgGlass') }, { value: 'solid', label: t('bgSolid') }]} />
+        </LookRow>
         <LookRow label={t('position')}>
           <Segmented value={look.pos} onChange={(v) => setLook({ pos: v })} options={[{ value: 'top', label: t('top') }, { value: 'bottom', label: t('bottom') }]} />
         </LookRow>

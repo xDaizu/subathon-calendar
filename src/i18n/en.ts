@@ -193,8 +193,11 @@ export const en: Dict = {
   theme: 'Theme',
   dark: 'Dark',
   light: 'Light',
+  background: 'Background',
+  bgGlass: 'Translucent',
+  bgSolid: 'Solid',
   window: 'Window',
-  overlayLookHint: 'Applies instantly in OBS. Language and theme also change the unlocks.',
+  overlayLookHint: 'Applies instantly in OBS. Language, theme and background also change the unlocks.',
   preview: 'Stream preview',
 
   landingTitle: 'Your subathon at a glance',

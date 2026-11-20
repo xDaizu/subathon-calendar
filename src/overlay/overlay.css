@@ -33,6 +33,17 @@ html.overlay-root body {
   --text-dim: rgba(21, 16, 42, 0.6);
   --track: rgba(20, 10, 40, 0.06);
 }
+/* Solid background option: same colours as the glass, fully opaque and no blur. */
+.ov[data-bg='solid'] {
+  --glass-bg: #0e0b1a;
+}
+.ov[data-theme='light'][data-bg='solid'] {
+  --glass-bg: #ffffff;
+}
+.ov[data-bg='solid'] .glass {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 
 .glass {
   background: var(--glass-bg);

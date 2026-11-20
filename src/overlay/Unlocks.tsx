@@ -110,6 +110,7 @@ export function UnlocksOverlay({ params }: { params: OverlayParams }) {
     <div
       className={cx('ov flex h-screen w-screen flex-col p-[0.8rem]', params.preview && 'preview-bg')}
       data-theme={look.theme}
+      data-bg={look.bg}
       style={{ ['--accent' as string]: ACCENT, ['--accent2' as string]: ACCENT2 }}
     >
       <AnimatePresence>

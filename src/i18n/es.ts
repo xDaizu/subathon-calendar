@@ -199,8 +199,11 @@ export const es = {
   theme: 'Tema',
   dark: 'Oscuro',
   light: 'Claro',
+  background: 'Fondo',
+  bgGlass: 'Translúcido',
+  bgSolid: 'Sólido',
   window: 'Ventana',
-  overlayLookHint: 'Se aplica al momento en OBS. Idioma y tema también cambian los desbloqueos.',
+  overlayLookHint: 'Se aplica al momento en OBS. Idioma, tema y fondo también cambian los desbloqueos.',
   preview: 'Vista previa del directo',
 
   // Landing
