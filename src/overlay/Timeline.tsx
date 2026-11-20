@@ -21,12 +21,22 @@ interface Props {
 }
 
 const pct = (v: number) => `${(v * 100).toFixed(4)}%`;
+const MIN_PAST_MS = 2 * 60_000;
 
 export function Timeline({ s, plan, scale, now, lang, callouts }: Props) {
   const nowX = scale.x(now);
   const inWindow = (iv: Interval) => iv.endAt > scale.start && iv.startAt < scale.end;
-  const events = visibleEvents(s.events, plan, now).filter((ev) => inWindow(eventInterval(ev, now)));
-  const rests: Interval[] = [...s.restLog, ...(plan.currentRest ? [plan.currentRest] : []), ...plan.projectedRests].filter(inWindow);
+  // Finished blips (a rest toggled on/off, an event started and stopped right away) aren't history.
+  const blip = (iv: Interval) => iv.endAt <= now && iv.endAt - iv.startAt < MIN_PAST_MS;
+  const events = visibleEvents(s.events, plan, now).filter((ev) => {
+    const iv = eventInterval(ev, now);
+    return inWindow(iv) && !(eventDisplayState(ev, now) === 'done' && blip(iv));
+  });
+  const rests: Interval[] = [
+    ...s.restLog.filter((r) => !blip(r)),
+    ...(plan.currentRest ? [plan.currentRest] : []),
+    ...plan.projectedRests,
+  ].filter(inWindow);
   const hours = (scale.end - scale.start) / 3_600_000;
   const ticks = timeTicks(scale, s.tz, Math.max(3, Math.round(hours / 4)));
   // Fade the edges that continue beyond the window (left only if the subathon started earlier).
@@ -71,8 +81,9 @@ export function Timeline({ s, plan, scale, now, lang, callouts }: Props) {
 
           {/* Rests */}
           {rests.map((r, i) => {
-            const p = place(r, scale, 0.006);
             const past = r.endAt <= now;
+            // Past blocks are drawn at their real size; only what's still ahead gets a minimum width.
+            const p = place(r, scale, past ? 0 : 0.006);
             return (
               <div
                 key={`r${i}-${r.startAt}`}
@@ -88,7 +99,7 @@ export function Timeline({ s, plan, scale, now, lang, callouts }: Props) {
           {events.map((ev) => {
             const st = eventDisplayState(ev, now);
             const iv = eventInterval(ev, now);
-            const p = place(iv, scale, 0.012);
+            const p = place(iv, scale, st === 'done' ? 0 : 0.012);
             const color = eventColor(ev.color);
             const isNext = ev.id === nextId;
             const u = st === 'upcoming' && isNext ? urgencyFor(iv.startAt - now) : 'calm';
@@ -116,7 +127,7 @@ export function Timeline({ s, plan, scale, now, lang, callouts }: Props) {
                   justifyContent: showTitle ? 'flex-start' : 'center',
                 }}
               >
-                {ev.emoji && <span className="shrink-0 text-[1.15rem] leading-none">{ev.emoji}</span>}
+                {ev.emoji && (st !== 'done' || p.width > 0.02) && <span className="shrink-0 text-[1.15rem] leading-none">{ev.emoji}</span>}
                 {showTitle && (
                   <span className="truncate text-[1rem] font-bold leading-none text-white drop-shadow">
                     {ev.title}
