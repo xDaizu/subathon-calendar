@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useT } from '../i18n';
 import { buildOverlayUrl, type OverlayPage } from '../overlay/params';
 import { useAdmin } from './context';
-import { appBaseUrl, useOverlayPrefs } from './overlayPrefs';
+import { appBaseUrl } from './overlayPrefs';
 
 /** Browser-source size each overlay page is designed for. */
 export const OVERLAY_SIZE: Record<OverlayPage, { w: number; h: number }> = {
@@ -14,7 +14,6 @@ export const OVERLAY_SIZE: Record<OverlayPage, { w: number; h: number }> = {
 export function OverlayFrame({ page, className }: { page: OverlayPage; className?: string }) {
   const { uid } = useAdmin();
   const { t } = useT();
-  const [prefs] = useOverlayPrefs();
   const box = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.2);
   const { w, h } = OVERLAY_SIZE[page];
@@ -27,7 +26,7 @@ export function OverlayFrame({ page, className }: { page: OverlayPage; className
     return () => ro.disconnect();
   }, [w]);
 
-  const src = buildOverlayUrl(appBaseUrl(), { uid, ...prefs }, { preview: '1' }, page);
+  const src = buildOverlayUrl(appBaseUrl(), uid, page, true);
 
   return (
     <div ref={box} className={`relative w-full overflow-hidden rounded-2xl ring-1 ring-white/10 ${className ?? ''}`} style={{ height: h * scale }}>

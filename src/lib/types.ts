@@ -80,6 +80,18 @@ export interface UnlockView {
   next: number;
 }
 
+export type WindowHours = 12 | 24 | 48;
+
+/** How the OBS pages look. Public: the overlays follow it live, it's not in their URL. */
+export interface OverlayLook {
+  lang: Lang;
+  theme: 'dark' | 'light';
+  /** Timeline only. */
+  pos: 'top' | 'bottom';
+  /** Timeline only: length of the visible time window. */
+  hours: WindowHours;
+}
+
 export interface Subathon {
   title: string;
   /** When the subathon starts. The countdown doesn't run before it. */
@@ -98,6 +110,8 @@ export interface Subathon {
   unlockView?: UnlockView;
   /** Show unlock sizes (bronze…diamond). Off/missing: every unlock looks the same. */
   unlockSizes?: boolean;
+  /** Missing in older documents: the overlay falls back to its URL options, then to defaults. */
+  overlay?: OverlayLook;
   /** Set by the panel when the timer runs out (the timer itself is private). */
   endedAt?: number;
   updatedAt: number;

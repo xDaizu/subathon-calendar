@@ -4,7 +4,7 @@ import { useT } from '../i18n';
 import { useSubathon } from '../lib/subathon';
 import type { Unlock, UnlockSize } from '../lib/types';
 import { progressTo, sizeOf, sortUnlocks, unlockViewOf, visibleRange } from '../lib/unlocks';
-import type { OverlayParams } from './params';
+import { ACCENT, ACCENT2, useOverlayLook, type OverlayParams } from './params';
 
 /** One unlock's fanfare. Then the list scrolls, then the next one (if several were reached). */
 const CELEBRATE_MS = 2800;
@@ -68,6 +68,7 @@ type RowState = 'unlocked' | 'latest' | 'celebrating' | 'next' | 'locked';
 
 export function UnlocksOverlay({ params }: { params: OverlayParams }) {
   const { data: s } = useSubathon(params.uid);
+  const look = useOverlayLook(s, params);
   const { t } = useT();
   const sorted = useMemo(() => sortUnlocks(s?.unlocks), [s?.unlocks]);
   const subs = s?.subs ?? 0;
@@ -108,8 +109,8 @@ export function UnlocksOverlay({ params }: { params: OverlayParams }) {
   return (
     <div
       className={cx('ov flex h-screen w-screen flex-col p-[0.8rem]', params.preview && 'preview-bg')}
-      data-theme={params.theme}
-      style={{ ['--accent' as string]: params.accent, ['--accent2' as string]: params.accent2 }}
+      data-theme={look.theme}
+      style={{ ['--accent' as string]: ACCENT, ['--accent2' as string]: ACCENT2 }}
     >
       <AnimatePresence>
         {ready && (

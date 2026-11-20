@@ -1,13 +1,13 @@
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { useT } from '../i18n';
 import * as A from '../lib/actions';
 import { formatDuration, hhmmToMinutes, minutesToHHMM } from '../lib/time';
 import { defaultTzLabel } from '../lib/tz';
-import { buildOverlayUrl, WINDOW_HOURS, type WindowHours } from '../overlay/params';
-import { Button, Chip, Field, inputCls, Segmented, Sheet } from '../ui/ui';
+import { buildOverlayUrl } from '../overlay/params';
+import { Button, Chip, Field, inputCls, Sheet } from '../ui/ui';
 import { useAdmin } from './context';
-import { appBaseUrl, useOverlayPrefs } from './overlayPrefs';
+import { appBaseUrl } from './overlayPrefs';
 
 const REST_DURATIONS = [0, 4, 5, 6, 7, 8, 9, 10].map((h) => h * 60);
 
@@ -30,7 +30,6 @@ const COMMON_TZ = [
 export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { s, uid, act } = useAdmin();
   const { t, lang } = useT();
-  const [prefs, setPrefs] = useOverlayPrefs();
 
   const [title, setTitle] = useState(s.title);
   const [start, setStart] = useState('');
@@ -84,22 +83,8 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
       <div className="mb-5 rounded-2xl bg-gradient-to-br from-accent/15 to-accent-2/10 p-4 ring-1 ring-accent/25">
         <div className="mb-1 text-sm font-bold">📺 {t('obsUrl')}</div>
         <div className="mb-3 text-xs text-ink-300">{t('obsUrlsHint')}</div>
-        <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
-          <PrefRow label={t('language')}>
-            <Segmented value={prefs.lang} onChange={(v) => setPrefs({ lang: v })} options={[{ value: 'es', label: 'ES' }, { value: 'en', label: 'EN' }]} />
-          </PrefRow>
-          <PrefRow label={t('theme')}>
-            <Segmented value={prefs.theme} onChange={(v) => setPrefs({ theme: v })} options={[{ value: 'dark', label: t('dark') }, { value: 'light', label: t('light') }]} />
-          </PrefRow>
-          <PrefRow label={t('position')} note={t('timelineOnly')}>
-            <Segmented value={prefs.pos} onChange={(v) => setPrefs({ pos: v })} options={[{ value: 'top', label: t('top') }, { value: 'bottom', label: t('bottom') }]} />
-          </PrefRow>
-          <PrefRow label={t('window')} note={t('timelineOnly')}>
-            <Segmented value={String(prefs.hours)} onChange={(v) => setPrefs({ hours: Number(v) as WindowHours })} options={WINDOW_HOURS.map((h) => ({ value: String(h), label: `${h}h` }))} />
-          </PrefRow>
-        </div>
-        <ObsUrl label={t('obsTimeline')} size="1920 × 200" url={buildOverlayUrl(appBaseUrl(), { uid, ...prefs })} />
-        <ObsUrl label={t('obsUnlocks')} size={t('obsUnlocksSize')} url={buildOverlayUrl(appBaseUrl(), { uid, ...prefs }, {}, 'unlocks')} />
+        <ObsUrl label={t('obsTimeline')} size="1920 × 200" url={buildOverlayUrl(appBaseUrl(), uid)} />
+        <ObsUrl label={t('obsUnlocks')} size={t('obsUnlocksSize')} url={buildOverlayUrl(appBaseUrl(), uid, 'unlocks')} />
       </div>
 
       <Field label={t('title')}>
@@ -158,17 +143,6 @@ export function SettingsSheet({ open, onOpenChange }: { open: boolean; onOpenCha
       </Field>
       <p className="text-xs text-ink-600">uid: {uid}</p>
     </Sheet>
-  );
-}
-
-function PrefRow({ label, note, children }: { label: string; note?: string; children: ReactNode }) {
-  return (
-    <div>
-      <div className="mb-1 font-semibold text-ink-300">
-        {label} {note && <span className="font-normal text-ink-400">· {note}</span>}
-      </div>
-      {children}
-    </div>
   );
 }
 

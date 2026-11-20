@@ -5,10 +5,12 @@ import * as A from '../lib/actions';
 import { eventColor } from '../lib/colors';
 import { eventDisplayState, eventWarning } from '../lib/schedule';
 import { formatDayShort, formatTime } from '../lib/time';
-import type { PlannedEvent } from '../lib/types';
-import { Button, Chip, cx } from '../ui/ui';
+import type { PlannedEvent, WindowHours } from '../lib/types';
+import { WINDOW_HOURS } from '../overlay/params';
+import { Button, Chip, cx, Segmented } from '../ui/ui';
 import { useAdmin } from './context';
 import { EventSheet, type EditTarget } from './EventSheet';
+import { useOverlayLookSetting } from './overlayPrefs';
 import { OverlayFrame } from './Preview';
 
 type Filter = 'all' | 'visible' | 'hidden';
@@ -98,8 +100,48 @@ export function EventList({ onAdd, tabs }: { onAdd: () => void; tabs: ReactNode 
 
       {rows.current.length + rows.past.length > 0 && <AddRowButton label={t('addEvent')} onClick={onAdd} />}
 
+      <OverlayLookCard />
+
       <EventSheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)} editing={editing} />
     </>
+  );
+}
+
+/** How the OBS overlays look (saved in the subathon, so OBS follows it live). */
+function OverlayLookCard() {
+  const { t } = useT();
+  const [look, setLook] = useOverlayLookSetting();
+  return (
+    <div className="mt-4 rounded-2xl bg-ink-800/70 p-3 ring-1 ring-white/5">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-3 text-xs">
+        <LookRow label={t('language')}>
+          <Segmented value={look.lang} onChange={(v) => setLook({ lang: v })} options={[{ value: 'es', label: 'ES' }, { value: 'en', label: 'EN' }]} />
+        </LookRow>
+        <LookRow label={t('theme')}>
+          <Segmented value={look.theme} onChange={(v) => setLook({ theme: v })} options={[{ value: 'dark', label: t('dark') }, { value: 'light', label: t('light') }]} />
+        </LookRow>
+        <LookRow label={t('position')}>
+          <Segmented value={look.pos} onChange={(v) => setLook({ pos: v })} options={[{ value: 'top', label: t('top') }, { value: 'bottom', label: t('bottom') }]} />
+        </LookRow>
+        <LookRow label={t('window')}>
+          <Segmented
+            value={String(look.hours)}
+            onChange={(v) => setLook({ hours: Number(v) as WindowHours })}
+            options={WINDOW_HOURS.map((h) => ({ value: String(h), label: `${h}h` }))}
+          />
+        </LookRow>
+      </div>
+      <div className="mt-2 text-xs text-ink-400">{t('overlayLookHint')}</div>
+    </div>
+  );
+}
+
+function LookRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <div className="mb-1 font-semibold text-ink-300">{label}</div>
+      {children}
+    </div>
   );
 }
 

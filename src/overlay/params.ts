@@ -1,58 +1,54 @@
-import type { Lang } from '../lib/types';
+import { useLayoutEffect } from 'react';
+import { useT } from '../i18n';
+import type { OverlayLook, Subathon, WindowHours } from '../lib/types';
 
-export const WINDOW_HOURS = [12, 24, 48] as const;
-export type WindowHours = (typeof WINDOW_HOURS)[number];
+export const WINDOW_HOURS: readonly WindowHours[] = [12, 24, 48];
+
+export const DEFAULT_LOOK: OverlayLook = { lang: 'es', theme: 'dark', pos: 'bottom', hours: 24 };
+
+export const ACCENT = '#a855f7';
+export const ACCENT2 = '#ec4899';
 
 export interface OverlayParams {
   uid: string | null;
-  lang: Lang;
-  pos: 'top' | 'bottom';
-  theme: 'dark' | 'light';
-  accent: string;
-  accent2: string;
-  /** Length of the visible time window. */
-  hours: WindowHours;
   /** Rendered inside the admin preview (adds a fake game background). */
   preview: boolean;
+  /** Look options from OBS URLs made before the look moved to the subathon document. */
+  legacyLook: OverlayLook;
 }
-
-const HEX = /^#?[0-9a-f]{3,8}$/i;
-const hex = (v: string | null, fallback: string) => (v && HEX.test(v) ? (v.startsWith('#') ? v : `#${v}`) : fallback);
 
 export function readParams(search = window.location.search): OverlayParams {
   const q = new URLSearchParams(search);
+  const hours = Number(q.get('hours'));
   return {
     uid: q.get('u'),
-    lang: q.get('lang') === 'en' ? 'en' : 'es',
-    pos: q.get('pos') === 'top' ? 'top' : 'bottom',
-    theme: q.get('theme') === 'light' ? 'light' : 'dark',
-    accent: hex(q.get('accent'), '#a855f7'),
-    accent2: hex(q.get('accent2'), '#ec4899'),
-    hours: (WINDOW_HOURS as readonly number[]).includes(Number(q.get('hours'))) ? (Number(q.get('hours')) as WindowHours) : 24,
     preview: q.get('preview') === '1',
+    legacyLook: {
+      lang: q.get('lang') === 'en' ? 'en' : 'es',
+      pos: q.get('pos') === 'top' ? 'top' : 'bottom',
+      theme: q.get('theme') === 'light' ? 'light' : 'dark',
+      hours: (WINDOW_HOURS as readonly number[]).includes(hours) ? (hours as WindowHours) : DEFAULT_LOOK.hours,
+    },
   };
 }
 
-/** The two OBS pages. Both read the same public document and the same URL options. */
+/** The look set in the panel (live), and the page language kept in sync with it. */
+export function useOverlayLook(s: Subathon | null, params: OverlayParams): OverlayLook {
+  const look = s?.overlay ? { ...DEFAULT_LOOK, ...s.overlay } : params.legacyLook;
+  const { lang, setLang } = useT();
+  // Before paint, so a language change never flashes the old one.
+  useLayoutEffect(() => {
+    if (lang !== look.lang) setLang(look.lang);
+  }, [lang, look.lang, setLang]);
+  return look;
+}
+
+/** The two OBS pages. Both read the same public document. */
 export type OverlayPage = 'overlay' | 'unlocks';
 
-export function buildOverlayUrl(
-  base: string,
-  p: Partial<Omit<OverlayParams, 'preview'>> & { uid: string },
-  extra: Record<string, string> = {},
-  page: OverlayPage = 'overlay',
-): string {
-  const q = new URLSearchParams({ u: p.uid });
-  if (p.lang && p.lang !== 'es') q.set('lang', p.lang);
-  if (p.pos && p.pos !== 'bottom') q.set('pos', p.pos);
-  if (p.theme && p.theme !== 'dark') q.set('theme', p.theme);
-  if (p.hours && p.hours !== 24) q.set('hours', String(p.hours));
-  if (p.accent && p.accent !== '#a855f7') q.set('accent', p.accent.replace('#', ''));
-  for (const [k, v] of Object.entries(extra)) q.set(k, v);
-  if (page === 'unlocks') {
-    // Timeline-only options.
-    q.delete('pos');
-    q.delete('hours');
-  }
+/** Only identifies the subathon: everything about the look comes live from the panel. */
+export function buildOverlayUrl(base: string, uid: string, page: OverlayPage = 'overlay', preview = false): string {
+  const q = new URLSearchParams({ u: uid });
+  if (preview) q.set('preview', '1');
   return `${base}${page}.html?${q.toString()}`;
 }

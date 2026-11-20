@@ -193,7 +193,6 @@ export const es = {
   obsTimeline: '⏳ Línea de tiempo',
   obsUnlocks: '🔓 Desbloqueos',
   obsUnlocksSize: '500 × 600',
-  timelineOnly: 'solo línea de tiempo',
   position: 'Posición',
   top: 'Arriba',
   bottom: 'Abajo',
@@ -201,6 +200,7 @@ export const es = {
   dark: 'Oscuro',
   light: 'Claro',
   window: 'Ventana',
+  overlayLookHint: 'Se aplica al momento en OBS. Idioma y tema también cambian los desbloqueos.',
   preview: 'Vista previa del directo',
 
   // Landing

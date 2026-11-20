@@ -1,42 +1,24 @@
-import { useEffect, useState } from 'react';
-import type { WindowHours } from '../overlay/params';
-import type { Lang } from '../lib/types';
+import * as A from '../lib/actions';
+import type { OverlayLook } from '../lib/types';
+import { DEFAULT_LOOK } from '../overlay/params';
+import { useAdmin } from './context';
 
-export interface OverlayPrefs {
-  lang: Lang;
-  pos: 'top' | 'bottom';
-  theme: 'dark' | 'light';
-  hours: WindowHours;
-}
+/** Where the panel kept the look when it was part of the OBS URL (seeds documents without one). */
+const LEGACY_KEY = 'subathon.overlayPrefs';
 
-const KEY = 'subathon.overlayPrefs';
-const DEFAULTS: OverlayPrefs = { lang: 'es', pos: 'bottom', theme: 'dark', hours: 24 };
-
-let listeners: ((p: OverlayPrefs) => void)[] = [];
-
-function read(): OverlayPrefs {
+function legacyLook(): OverlayLook {
   try {
-    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) ?? '{}') };
+    return { ...DEFAULT_LOOK, ...JSON.parse(localStorage.getItem(LEGACY_KEY) ?? '{}') };
   } catch {
-    return DEFAULTS;
+    return DEFAULT_LOOK;
   }
 }
 
-/** Overlay URL options (stored locally; they're part of the OBS URL, not the subathon). */
-export function useOverlayPrefs(): [OverlayPrefs, (patch: Partial<OverlayPrefs>) => void] {
-  const [prefs, setPrefs] = useState(read);
-  useEffect(() => {
-    listeners.push(setPrefs);
-    return () => {
-      listeners = listeners.filter((l) => l !== setPrefs);
-    };
-  }, []);
-  const update = (patch: Partial<OverlayPrefs>) => {
-    const next = { ...read(), ...patch };
-    localStorage.setItem(KEY, JSON.stringify(next));
-    listeners.forEach((l) => l(next));
-  };
-  return [prefs, update];
+/** Overlay look, saved in the subathon: the OBS pages (and the preview) change right away. */
+export function useOverlayLookSetting(): [OverlayLook, (patch: Partial<OverlayLook>) => void] {
+  const { s, act } = useAdmin();
+  const look = s.overlay ? { ...DEFAULT_LOOK, ...s.overlay } : legacyLook();
+  return [look, (patch) => void act(A.setOverlayLook({ ...look, ...patch }))];
 }
 
 export function appBaseUrl(): string {

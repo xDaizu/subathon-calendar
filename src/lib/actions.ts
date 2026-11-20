@@ -3,7 +3,7 @@
  * Firestore wrappers in `subathon.ts` run these inside transactions.
  */
 import { currentRemaining, isEnded, MIN, overrideMatches, REST_CONSUME_WINDOW } from './schedule';
-import type { Clock, FullState, PlannedEvent, Subathon, Unlock, UnlockView } from './types';
+import type { Clock, FullState, OverlayLook, PlannedEvent, Subathon, Unlock, UnlockView } from './types';
 
 type Action = (st: FullState, now: number) => FullState;
 
@@ -361,6 +361,11 @@ export const setUnlockView =
 export const setUnlockSizes =
   (on: boolean): Action =>
   (st, now) => ({ ...st, pub: touch({ ...st.pub, unlockSizes: on }, now) });
+
+/** Overlay look (language, theme, position, window). The OBS pages pick it up live. */
+export const setOverlayLook =
+  (look: OverlayLook): Action =>
+  (st, now) => ({ ...st, pub: touch({ ...st.pub, overlay: look }, now) });
 
 export const updateSettings =
   (patch: Partial<Pick<Subathon, 'title' | 'startAt' | 'restStandard' | 'tz' | 'tzLabel'>>): Action =>

@@ -187,7 +187,6 @@ export const en: Dict = {
   obsTimeline: '⏳ Timeline',
   obsUnlocks: '🔓 Unlocks',
   obsUnlocksSize: '500 × 600',
-  timelineOnly: 'timeline only',
   position: 'Position',
   top: 'Top',
   bottom: 'Bottom',
@@ -195,6 +194,7 @@ export const en: Dict = {
   dark: 'Dark',
   light: 'Light',
   window: 'Window',
+  overlayLookHint: 'Applies instantly in OBS. Language and theme also change the unlocks.',
   preview: 'Stream preview',
 
   landingTitle: 'Your subathon at a glance',
