@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { adjustSubs, deleteUnlock, setUnlockHidden, setUnlockTarget, upsertUnlock } from './actions';
+import { adjustSubs, deleteUnlock, setUnlockHidden, setUnlockSizes, setUnlockTarget, upsertUnlock } from './actions';
 import type { FullState, Unlock } from './types';
-import { progressTo, sortUnlocks, suggestTarget, unlockedCount, unlockViewOf, visibleRange } from './unlocks';
+import { progressTo, sizeOf, sortUnlocks, suggestTarget, unlockedCount, unlockViewOf, visibleRange } from './unlocks';
 
 const u = (id: string, target: number): Unlock => ({ id, title: id, target });
 const list = sortUnlocks([u('c', 30), u('a', 10), u('e', 50), u('b', 20), u('d', 40), u('f', 60), u('g', 70)]);
@@ -90,5 +90,23 @@ describe('actions', () => {
     expect(shown.pub.unlocks).toEqual([u('a', 15)]);
     expect(shown.priv.unlocks).toEqual([]);
     expect(deleteUnlock('a')(hidden, 1).priv.unlocks).toEqual([]);
+  });
+  it('sizes: toggled for all unlocks, each keeps its own size', () => {
+    const sized = upsertUnlock({ ...u('a', 10), size: 'XL' }, false)(st, 1);
+    const on = setUnlockSizes(true)(sized, 1);
+    expect(on.pub.unlockSizes).toBe(true);
+    expect(setUnlockTarget('a', 12)(on, 1).pub.unlocks?.[0].size).toBe('XL');
+    expect(setUnlockHidden('a', true)(on, 1).priv.unlocks?.[0].size).toBe('XL');
+    expect(setUnlockSizes(false)(on, 1).pub.unlocks?.[0].size).toBe('XL');
+  });
+});
+
+describe('sizeOf', () => {
+  it('is null while sizes are off, M by default when on', () => {
+    expect(sizeOf({ ...u('a', 1), size: 'L' }, {})).toBeNull();
+    expect(sizeOf({ ...u('a', 1), size: 'L' }, { unlockSizes: false })).toBeNull();
+    expect(sizeOf({ ...u('a', 1), size: 'L' }, { unlockSizes: true })).toBe('L');
+    expect(sizeOf(u('a', 1), { unlockSizes: true })).toBe('M');
+    expect(sizeOf({ ...u('a', 1), size: 'XXL' as never }, { unlockSizes: true })).toBe('M');
   });
 });

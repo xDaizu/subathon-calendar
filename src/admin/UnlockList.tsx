@@ -3,8 +3,18 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useT } from '../i18n';
 import * as A from '../lib/actions';
 import { UNLOCK_EMOJIS } from '../lib/colors';
-import type { Unlock, UnlockView } from '../lib/types';
-import { MAX_UNLOCK_VIEW, sortUnlocks, suggestTarget, unlockedCount, unlockViewOf, visibleRange } from '../lib/unlocks';
+import type { Unlock, UnlockSize, UnlockView } from '../lib/types';
+import {
+  DEFAULT_UNLOCK_SIZE,
+  MAX_UNLOCK_VIEW,
+  sizeOf,
+  sortUnlocks,
+  suggestTarget,
+  UNLOCK_SIZES,
+  unlockedCount,
+  unlockViewOf,
+  visibleRange,
+} from '../lib/unlocks';
 import { Button, cx, Field, inputCls, Sheet, Switch } from '../ui/ui';
 import { useAdmin } from './context';
 import { AddRowButton } from './EventList';
@@ -51,14 +61,6 @@ export function UnlockList({ tabs }: { tabs: ReactNode }) {
         </Button>
       </div>
 
-      <div className="mb-3 rounded-2xl bg-ink-800/70 p-3 ring-1 ring-white/5">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <Stepper label={`✓ ${t('showUnlocked')}`} value={view.past} onChange={(v) => setView({ past: v })} />
-          <Stepper label={`🔒 ${t('showNext')}`} value={view.next} onChange={(v) => setView({ next: v })} />
-        </div>
-        <div className="mt-2 text-xs text-ink-400">{t('unlocksViewHint')}</div>
-      </div>
-
       {onScreenIds.size > 0 && (
         <div className="mb-3">
           <button className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-ink-400" onClick={() => setPreviewOpen((v) => !v)}>
@@ -78,6 +80,7 @@ export function UnlockList({ tabs }: { tabs: ReactNode }) {
             const { u, hidden } = r;
             const done = u.target <= subs;
             const isNext = u.id === nextId;
+            const size = sizeOf(u, s);
             return (
               <motion.li
                 key={u.id}
@@ -93,17 +96,29 @@ export function UnlockList({ tabs }: { tabs: ReactNode }) {
                 )}
               >
                 <button onClick={() => setEditing(r)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                  <span
-                    className={cx(
-                      'relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl',
-                      done && !hidden ? 'bg-gradient-to-br from-accent/60 to-accent-2/50' : 'bg-ink-700/70',
-                    )}
-                  >
-                    <span className={cx((hidden || (!done && !isNext)) && 'opacity-60 grayscale')}>{u.emoji ?? '🎁'}</span>
+                  <span className={cx('relative h-11 w-11 shrink-0', size && `tier-${size}`)}>
+                    <span
+                      className={cx(
+                        'relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl text-xl',
+                        done && !hidden
+                          ? size
+                            ? 'metal'
+                            : 'bg-gradient-to-br from-accent/60 to-accent-2/50'
+                          : 'bg-ink-700/70',
+                        size && !(done && !hidden) && 'medal',
+                      )}
+                    >
+                      <span className={cx('relative', (hidden || (!done && !isNext)) && 'opacity-60 grayscale')}>
+                        {u.emoji ?? '🎁'}
+                      </span>
+                    </span>
                     <span className="absolute -right-1 -bottom-1 text-xs">{done ? '✅' : '🔒'}</span>
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className={cx('block truncate font-semibold', (done || hidden) && 'text-ink-300')}>{u.title}</span>
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      {size && <SizeChip size={size} />}
+                      <span className={cx('min-w-0 truncate font-semibold', (done || hidden) && 'text-ink-300')}>{u.title}</span>
+                    </span>
                     <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-400">
                       {done ? (
                         <Badge tone="accent">{t('statusUnlocked')}</Badge>
@@ -137,6 +152,25 @@ export function UnlockList({ tabs }: { tabs: ReactNode }) {
 
       {rows.length > 0 && <AddRowButton label={t('addUnlock')} onClick={() => setAdding(true)} />}
 
+      <div className="mt-4 rounded-2xl bg-ink-800/70 p-3 ring-1 ring-white/5">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <Stepper label={`✓ ${t('showUnlocked')}`} value={view.past} onChange={(v) => setView({ past: v })} />
+          <Stepper label={`🔒 ${t('showNext')}`} value={view.next} onChange={(v) => setView({ next: v })} />
+        </div>
+        <div className="mt-2 text-xs text-ink-400">{t('unlocksViewHint')}</div>
+        <div className="mt-3 flex items-center justify-between gap-4 border-t border-white/5 pt-3">
+          <div>
+            <div className="text-sm font-semibold text-ink-300">💎 {t('showSizes')}</div>
+            <div className="text-xs text-ink-400">{t('showSizesHint')}</div>
+          </div>
+          <Switch
+            checked={!!s.unlockSizes}
+            onChange={(on) => void act(A.setUnlockSizes(on))}
+            label={t('showSizes')}
+          />
+        </div>
+      </div>
+
       <UnlockSheet
         open={adding || !!editing}
         onOpenChange={(o) => {
@@ -160,6 +194,14 @@ function Badge({ children, tone }: { children: ReactNode; tone?: 'accent' }) {
       )}
     >
       {children}
+    </span>
+  );
+}
+
+function SizeChip({ size }: { size: UnlockSize }) {
+  return (
+    <span className={`tier-${size} shrink-0`}>
+      <span className="tier-chip block rounded-md px-1.5 py-1 text-[0.62rem]">{size}</span>
     </span>
   );
 }
@@ -253,6 +295,7 @@ function UnlockSheet({
   const [emoji, setEmoji] = useState<string>(UNLOCK_EMOJIS[0]);
   const [target, setTarget] = useState('');
   const [visible, setVisible] = useState(true);
+  const [size, setSize] = useState<UnlockSize>(DEFAULT_UNLOCK_SIZE);
 
   useEffect(() => {
     if (!open) return;
@@ -260,6 +303,7 @@ function UnlockSheet({
     setEmoji(editing?.u.emoji ?? UNLOCK_EMOJIS[0]);
     setTarget(String(editing?.u.target ?? suggestTarget(rows.map((r) => r.u), s.subs ?? 0)));
     setVisible(!editing?.hidden);
+    setSize(editing?.u.size ?? DEFAULT_UNLOCK_SIZE);
   }, [open, editing]);
 
   const targetNum = /^\d{1,7}$/.test(target) ? Number(target) : null;
@@ -267,7 +311,7 @@ function UnlockSheet({
 
   const save = () => {
     if (!valid || targetNum == null) return;
-    const u: Unlock = { id: editing?.u.id ?? A.newEventId(), title: title.trim(), emoji, target: targetNum };
+    const u: Unlock = { id: editing?.u.id ?? A.newEventId(), title: title.trim(), emoji, target: targetNum, size };
     void act(A.upsertUnlock(u, !visible), t('toastUnlockSaved'));
     onOpenChange(false);
   };
@@ -318,6 +362,27 @@ function UnlockSheet({
             onKeyDown={(e) => e.key === 'Enter' && save()}
           />
           <span className="text-sm font-semibold text-ink-400">{t('subsUnit')}</span>
+        </div>
+      </Field>
+      <Field label={t('unlockSize')} hint={t(s.unlockSizes ? 'unlockSizeHint' : 'unlockSizeOffHint')}>
+        <div className="grid grid-cols-4 gap-1.5">
+          {UNLOCK_SIZES.map((z) => (
+            <button
+              key={z}
+              type="button"
+              onClick={() => setSize(z)}
+              className={cx(
+                `tier-${z} flex flex-col items-center gap-1.5 rounded-xl py-2.5 transition active:scale-95`,
+                z === size ? 'bg-ink-600 ring-2 ring-accent' : 'bg-ink-800 hover:bg-ink-700',
+              )}
+            >
+              <span className="metal relative h-6 w-6 overflow-hidden rounded-full" />
+              <span className="text-center leading-tight">
+                <span className="block text-sm font-bold">{z}</span>
+                <span className="block text-[0.68rem] text-ink-400">{t(`size${z}`)}</span>
+              </span>
+            </button>
+          ))}
         </div>
       </Field>
       <Field label={t('emoji')}>

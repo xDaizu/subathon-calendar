@@ -1,11 +1,21 @@
 /** Pure helpers for the unlocks (rewards by sub count). Shared by the panel and the overlay. */
-import type { Subathon, Unlock, UnlockView } from './types';
+import type { Subathon, Unlock, UnlockSize, UnlockView } from './types';
 
 /** Default: the latest unlocked + the 2 before it, and the 2 next. */
 export const DEFAULT_UNLOCK_VIEW: UnlockView = { past: 3, next: 2 };
 export const MAX_UNLOCK_VIEW = 10;
 
+/** Smallest to biggest: bronze, silver, gold, diamond. */
+export const UNLOCK_SIZES: readonly UnlockSize[] = ['S', 'M', 'L', 'XL'];
+export const DEFAULT_UNLOCK_SIZE: UnlockSize = 'M';
+
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+/** The size `u` is shown with, or null when sizes are off (it looks like any other unlock). */
+export function sizeOf(u: Unlock, s: Pick<Subathon, 'unlockSizes'>): UnlockSize | null {
+  if (!s.unlockSizes) return null;
+  return u.size != null && UNLOCK_SIZES.includes(u.size) ? u.size : DEFAULT_UNLOCK_SIZE;
+}
 
 /** By target (ties keep a stable order). */
 export function sortUnlocks(list: Unlock[] | undefined): Unlock[] {

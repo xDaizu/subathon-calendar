@@ -56,6 +56,9 @@ export interface Interval {
   endAt: number;
 }
 
+/** How big a reward is. Each size looks fancier: S bronze, M silver, L gold, XL diamond. */
+export type UnlockSize = 'S' | 'M' | 'L' | 'XL';
+
 /** A reward viewers unlock when the sub count reaches `target`. Public (shown on the unlocks overlay). */
 export interface Unlock {
   id: string;
@@ -63,6 +66,8 @@ export interface Unlock {
   emoji?: string;
   /** Sub count that unlocks it. */
   target: number;
+  /** Only used while sizes are on (`Subathon.unlockSizes`). Missing: M. */
+  size?: UnlockSize;
 }
 
 /** How many unlocks the overlay shows around the current one. */
@@ -89,6 +94,8 @@ export interface Subathon {
   subs?: number;
   unlocks?: Unlock[];
   unlockView?: UnlockView;
+  /** Show unlock sizes (bronze…diamond). Off/missing: every unlock looks the same. */
+  unlockSizes?: boolean;
   /** Set by the panel when the timer runs out (the timer itself is private). */
   endedAt?: number;
   updatedAt: number;

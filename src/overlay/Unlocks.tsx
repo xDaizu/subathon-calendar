@@ -2,8 +2,8 @@ import { animate, AnimatePresence, motion } from 'motion/react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useT } from '../i18n';
 import { useSubathon } from '../lib/subathon';
-import type { Unlock } from '../lib/types';
-import { progressTo, sortUnlocks, unlockViewOf, visibleRange } from '../lib/unlocks';
+import type { Unlock, UnlockSize } from '../lib/types';
+import { progressTo, sizeOf, sortUnlocks, unlockViewOf, visibleRange } from '../lib/unlocks';
 import type { OverlayParams } from './params';
 
 /** One unlock's fanfare. Then the list scrolls, then the next one (if several were reached). */
@@ -148,6 +148,7 @@ export function UnlocksOverlay({ params }: { params: OverlayParams }) {
                   >
                     <Row
                       u={u}
+                      size={s ? sizeOf(u, s) : null}
                       state={state}
                       progress={state === 'next' ? progressTo(sorted, i, displaySubs) : state === 'celebrating' ? 1 : 0}
                       left={u.target - displaySubs}
@@ -163,19 +164,35 @@ export function UnlocksOverlay({ params }: { params: OverlayParams }) {
   );
 }
 
-function Row({ u, state, progress, left }: { u: Unlock; state: RowState; progress: number; left: number }) {
+function Row({
+  u,
+  size,
+  state,
+  progress,
+  left,
+}: {
+  u: Unlock;
+  size: UnlockSize | null;
+  state: RowState;
+  progress: number;
+  left: number;
+}) {
   const { t } = useT();
   const done = state === 'unlocked' || state === 'latest';
   const party = state === 'celebrating';
 
   return (
     <motion.div
-      className={cx('ul-row relative flex h-[3.6rem] items-center gap-[0.75rem] overflow-hidden rounded-[1rem] px-[0.6rem]', `ul-${state}`)}
+      className={cx(
+        'ul-row relative flex h-[3.6rem] items-center gap-[0.75rem] overflow-hidden rounded-[1rem] px-[0.6rem]',
+        `ul-${state}`,
+        size && `tier-${size}`,
+      )}
       animate={party ? { scale: [1, 1, 1.05, 1.02] } : { scale: 1 }}
       transition={party ? { duration: 1.2, times: [0, POP / 1.2, (POP + 0.2) / 1.2, 1] } : { duration: 0.3 }}
     >
       {party && <Fanfare />}
-      <Badge emoji={u.emoji} state={state} />
+      <Badge emoji={u.emoji} state={state} size={size} />
       <div className="relative min-w-0 flex-1">
         <div className={cx('truncate text-[1.15rem] font-bold leading-tight', state === 'locked' && 'text-dim')}>{u.title}</div>
         {state === 'next' && (
@@ -206,13 +223,22 @@ function Row({ u, state, progress, left }: { u: Unlock; state: RowState; progres
   );
 }
 
-const BURST = Array.from({ length: 14 }, (_, i) => {
-  const a = (i / 14) * Math.PI * 2 + (i % 2 ? 0.2 : 0);
-  const d = 2.2 + (i % 3) * 0.7;
-  return { x: Math.cos(a) * d, y: Math.sin(a) * d * 0.8, size: i % 3 === 0 ? 0.42 : 0.28 };
-});
+const burst = (n: number, reach: number) =>
+  Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2 + (i % 2 ? 0.2 : 0);
+    const d = (2.2 + (i % 3) * 0.7) * reach;
+    return { x: Math.cos(a) * d, y: Math.sin(a) * d * 0.8, size: i % 3 === 0 ? 0.42 : 0.28 };
+  });
+/** Bigger unlocks, bigger burst. */
+const BURSTS: Record<UnlockSize | 'none', ReturnType<typeof burst>> = {
+  none: burst(14, 1),
+  S: burst(10, 0.9),
+  M: burst(14, 1),
+  L: burst(20, 1.15),
+  XL: burst(28, 1.35),
+};
 
-function Badge({ emoji, state }: { emoji?: string; state: RowState }) {
+function Badge({ emoji, state, size }: { emoji?: string; state: RowState; size: UnlockSize | null }) {
   const done = state === 'unlocked' || state === 'latest';
   const party = state === 'celebrating';
   const locked = state === 'next' || state === 'locked';
@@ -221,14 +247,19 @@ function Badge({ emoji, state }: { emoji?: string; state: RowState }) {
       <motion.div
         className={cx(
           'relative flex h-full w-full items-center justify-center overflow-hidden rounded-[0.8rem] text-[1.4rem]',
-          done ? 'accent-gradient shadow-[0_0_1rem_color-mix(in_oklab,var(--accent)_45%,transparent)]' : 'bg-[var(--track)]',
+          done
+            ? size
+              ? 'metal'
+              : 'accent-gradient shadow-[0_0_1rem_color-mix(in_oklab,var(--accent)_45%,transparent)]'
+            : 'bg-[var(--track)]',
+          size && !done && 'medal',
         )}
         animate={party ? { rotate: [0, -14, 12, -10, 8, -4, 0, 0], scale: [1, 1, 1, 1, 1, 1, 1.3, 1] } : { rotate: 0, scale: 1 }}
         transition={party ? { duration: POP + 0.45, times: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1] } : { duration: 0.2 }}
       >
         {party && (
           <motion.div
-            className="accent-gradient absolute inset-0"
+            className={cx('absolute inset-0', size ? 'metal' : 'accent-gradient')}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: POP, duration: 0.15 }}
@@ -253,7 +284,7 @@ function Badge({ emoji, state }: { emoji?: string; state: RowState }) {
         </span>
       )}
       {party &&
-        BURST.map((p, k) => (
+        BURSTS[size ?? 'none'].map((p, k) => (
           <motion.span
             key={k}
             className="ul-spark pointer-events-none absolute top-1/2 left-1/2 rounded-full"

@@ -162,8 +162,29 @@ html.overlay-root body {
   transform: skewX(-18deg);
 }
 .ul-spark {
-  background: radial-gradient(circle, #fff, var(--accent2) 60%, transparent 70%);
-  box-shadow: 0 0 0.5rem var(--accent2);
+  background: radial-gradient(circle, #fff, var(--spark, var(--accent2)) 60%, transparent 70%);
+  box-shadow: 0 0 0.5rem var(--spark, var(--accent2));
+}
+
+/* Sized unlocks: the fanfare and the unlocked row take the metal's color. */
+.ul-row[class*='tier-'] {
+  --spark: var(--tier-color);
+}
+.ul-row[class*='tier-'] .ul-glow {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--tier-color) 38%, transparent),
+    color-mix(in oklab, var(--tier-color) 14%, transparent)
+  );
+  box-shadow:
+    inset 0 0 0 2px color-mix(in oklab, var(--tier-color) 80%, transparent),
+    inset 0 0 1.5rem var(--tier-glow);
+}
+.ul-row.tier-L.ul-latest,
+.ul-row.tier-XL.ul-latest {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--tier-color) 60%, transparent),
+    inset 0 0 1.2rem color-mix(in oklab, var(--tier-color) 18%, transparent);
 }
 .ul-bar {
   transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);

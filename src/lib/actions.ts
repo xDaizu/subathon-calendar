@@ -348,6 +348,11 @@ export const setUnlockView =
   (view: UnlockView): Action =>
   (st, now) => ({ ...st, pub: touch({ ...st.pub, unlockView: view }, now) });
 
+/** Sizes on/off for every unlock. Each unlock keeps its size while they're off. */
+export const setUnlockSizes =
+  (on: boolean): Action =>
+  (st, now) => ({ ...st, pub: touch({ ...st.pub, unlockSizes: on }, now) });
+
 export const updateSettings =
   (patch: Partial<Pick<Subathon, 'title' | 'startAt' | 'restStandard' | 'tz' | 'tzLabel'>>): Action =>
   (st, now) => ({ ...st, pub: touch({ ...st.pub, ...patch }, now) });
