@@ -1,0 +1,28 @@
+@import '../styles/base.css';
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+html, body {
+  background: var(--color-ink-950);
+  color: var(--color-ink-100);
+  min-height: 100%;
+}
+body {
+  background:
+    radial-gradient(60rem 30rem at 0% -10%, rgba(168, 85, 247, 0.16), transparent 60%),
+    radial-gradient(50rem 30rem at 100% 0%, rgba(236, 72, 153, 0.1), transparent 60%),
+    var(--color-ink-950);
+  background-attachment: fixed;
+  -webkit-tap-highlight-color: transparent;
+}
+input[type='time']::-webkit-calendar-picker-indicator,
+input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
