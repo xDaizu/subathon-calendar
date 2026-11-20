@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { adjustSubs, deleteUnlock, setUnlockHidden, setUnlockSizes, setUnlockTarget, upsertUnlock } from './actions';
 import type { FullState, PlannedEvent, Unlock } from './types';
-import { eventsByUnlock, progressTo, sizeOf, sortUnlocks, suggestTarget, unlockedCount, unlockViewOf, visibleRange } from './unlocks';
+import { eventsByUnlock, progressTo, sizeOf, sortUnlocks, suggestTarget, unlockedCount, unlockedNewestFirst, unlockViewOf, visibleRange } from './unlocks';
 
 const u = (id: string, target: number): Unlock => ({ id, title: id, target });
 const list = sortUnlocks([u('c', 30), u('a', 10), u('e', 50), u('b', 20), u('d', 40), u('f', 60), u('g', 70)]);
@@ -14,6 +14,18 @@ describe('unlockedCount', () => {
     expect(unlockedCount(list, 10)).toBe(1);
     expect(unlockedCount(list, 39)).toBe(3);
     expect(unlockedCount(list, 999)).toBe(7);
+  });
+});
+
+describe('unlockedNewestFirst', () => {
+  it('keeps only reached unlocks (inclusive), newest first', () => {
+    expect(unlockedNewestFirst([u('c', 30), u('a', 10), u('b', 20)], 20).map((x) => x.id)).toEqual(['b', 'a']);
+    expect(unlockedNewestFirst(list, 999).map((x) => x.id).join('')).toBe('gfedcba');
+  });
+  it('is empty with nothing reached or no unlocks', () => {
+    expect(unlockedNewestFirst(list, 9)).toEqual([]);
+    expect(unlockedNewestFirst([], 100)).toEqual([]);
+    expect(unlockedNewestFirst(undefined, 100)).toEqual([]);
   });
 });
 

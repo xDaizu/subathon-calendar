@@ -33,6 +33,13 @@ export function sortUnlocks(list: Unlock[] | undefined): Unlock[] {
   return [...(list ?? [])].sort((a, b) => a.target - b.target || a.id.localeCompare(b.id));
 }
 
+/** The unlocks `subs` has reached, newest (highest target) first. */
+export function unlockedNewestFirst(list: Unlock[] | undefined, subs: number): Unlock[] {
+  return sortUnlocks(list)
+    .filter((u) => u.target <= subs)
+    .reverse();
+}
+
 /** How many of the (sorted) unlocks `subs` has reached. */
 export function unlockedCount(sorted: Unlock[], subs: number): number {
   let n = 0;

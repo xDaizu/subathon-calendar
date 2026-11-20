@@ -166,18 +166,21 @@ export function UnlocksOverlay({ params }: { params: OverlayParams }) {
   );
 }
 
-function Row({
+export function Row({
   u,
   size,
   state,
   progress,
   left,
+  wrap = false,
 }: {
   u: Unlock;
   size: UnlockSize | null;
   state: RowState;
   progress: number;
   left: number;
+  /** Long titles wrap instead of being cut (the viewers' page; OBS rows keep a fixed height). */
+  wrap?: boolean;
 }) {
   const { t } = useT();
   const done = state === 'unlocked' || state === 'latest';
@@ -186,7 +189,8 @@ function Row({
   return (
     <motion.div
       className={cx(
-        'ul-row relative flex h-[3.6rem] items-center gap-[0.75rem] overflow-hidden rounded-[1rem] px-[0.6rem]',
+        'ul-row relative flex items-center gap-[0.75rem] overflow-hidden rounded-[1rem] px-[0.6rem]',
+        wrap ? 'min-h-[3.6rem] py-[0.5rem]' : 'h-[3.6rem]',
         `ul-${state}`,
         size && `tier-${size}`,
       )}
@@ -196,7 +200,7 @@ function Row({
       {party && <Fanfare />}
       <Badge emoji={u.emoji} state={state} size={size} />
       <div className="relative min-w-0 flex-1">
-        <div className={cx('truncate text-[1.15rem] font-bold leading-tight', state === 'locked' && 'text-dim')}>{u.title}</div>
+        <div className={cx(wrap ? 'break-words' : 'truncate', 'text-[1.15rem] font-bold leading-tight', state === 'locked' && 'text-dim')}>{u.title}</div>
         {state === 'next' && (
           <div className="mt-[0.3rem] flex items-center gap-[0.5rem]">
             <div className="h-[0.32rem] flex-1 overflow-hidden rounded-full bg-[var(--track)]">
@@ -327,7 +331,7 @@ function Fanfare() {
 }
 
 /** A number that counts up/down to its new value. */
-function Count({ value }: { value: number }) {
+export function Count({ value }: { value: number }) {
   const { lang } = useT();
   const ref = useRef<HTMLSpanElement>(null);
   const prev = useRef(value);

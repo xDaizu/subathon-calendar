@@ -207,3 +207,40 @@ html.overlay-root body {
     radial-gradient(50% 70% at 80% 60%, rgba(60, 120, 255, 0.35), transparent),
     linear-gradient(135deg, #24412f, #1c2a44 60%, #3a2a1c);
 }
+
+/* ───────────── Unlocked page (for viewers, not OBS) ───────────── */
+
+html.share-root {
+  font-size: clamp(15px, 4.2vw, 18px);
+  background: #0d0b17;
+}
+html.share-root:has(.share-page[data-theme='light']) {
+  background: #f6f4fb;
+}
+html.share-root body {
+  margin: 0;
+}
+.share-page {
+  color-scheme: dark;
+  background:
+    radial-gradient(70% 50% at 15% 0%, color-mix(in oklab, var(--accent) 22%, transparent), transparent),
+    radial-gradient(60% 45% at 95% 10%, color-mix(in oklab, var(--accent2) 16%, transparent), transparent),
+    #0d0b17;
+}
+.share-page[data-theme='light'] {
+  color-scheme: light;
+  background:
+    radial-gradient(70% 50% at 15% 0%, color-mix(in oklab, var(--accent) 14%, transparent), transparent),
+    radial-gradient(60% 45% at 95% 10%, color-mix(in oklab, var(--accent2) 10%, transparent), transparent),
+    #f6f4fb;
+}
+.share-spinner {
+  border: 3px solid var(--track);
+  border-top-color: var(--accent);
+  animation: share-spin 0.8s linear infinite;
+}
+@keyframes share-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

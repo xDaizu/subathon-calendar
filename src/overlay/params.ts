@@ -46,9 +46,11 @@ export function useOverlayLook(s: Subathon | null, params: OverlayParams): Overl
 
 /** The two OBS pages. Both read the same public document. */
 export type OverlayPage = 'overlay' | 'unlocks';
+/** Every page that reads the public document: the OBS pages + the viewers' unlocked page. */
+export type PublicPage = OverlayPage | 'unlocked';
 
 /** Only identifies the subathon: everything about the look comes live from the panel. */
-export function buildOverlayUrl(base: string, uid: string, page: OverlayPage = 'overlay', preview = false): string {
+export function buildOverlayUrl(base: string, uid: string, page: PublicPage = 'overlay', preview = false): string {
   const q = new URLSearchParams({ u: uid });
   if (preview) q.set('preview', '1');
   return `${base}${page}.html?${q.toString()}`;

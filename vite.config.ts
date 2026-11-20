@@ -13,6 +13,7 @@ export default defineConfig({
         index: resolve(import.meta.dirname, 'index.html'),
         overlay: resolve(import.meta.dirname, 'overlay.html'),
         unlocks: resolve(import.meta.dirname, 'unlocks.html'),
+        unlocked: resolve(import.meta.dirname, 'unlocked.html'),
         admin: resolve(import.meta.dirname, 'admin.html'),
       },
     },
