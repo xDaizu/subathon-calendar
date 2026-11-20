@@ -409,9 +409,13 @@ describe('hiding rests from the overlay', () => {
     expect(shown(st)[0]).toMatchObject({ startAt: at(21, 5), endAt: at(21, 12), adjusted: true });
     expect(shown(st)[1]).toMatchObject({ startAt: at(22, 3) });
   });
-  it('drops the old one-rest "off" switch from older documents', () => {
-    const st0 = full(base());
+  it('the old one-rest "off" switch (older documents, stale panels) also hides every rest', () => {
+    const st0 = full(base({ remainingMs: 60 * HOUR }));
     st0.pub.restOverride = { forOcc: at(21, 3), skipped: true } as never;
+    expect(shown(st0)).toEqual([]);
+    const st = A.setRestsHidden(false)(st0, now);
+    expect(st.pub.restOverride).toBeUndefined();
+    expect(shown(st)[0]).toMatchObject({ startAt: at(21, 3) });
     expect(A.setRestsHidden(true)(st0, now).pub.restOverride).toBeUndefined();
   });
 });

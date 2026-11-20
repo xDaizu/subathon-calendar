@@ -13,6 +13,14 @@ export function overrideMatches(ov: { forOcc: number } | undefined, occ: number)
   return ov != null && Math.abs(ov.forOcc - occ) < 12 * HOUR;
 }
 
+/**
+ * Planned rests are hidden from viewers. Also true for the old one-rest "off" switch
+ * (`restOverride.skipped`), still written by panels that weren't reloaded.
+ */
+export function restsHidden(s: Pick<Subathon, 'restsHidden' | 'restOverride'>): boolean {
+  return !!s.restsHidden || !!(s.restOverride as { skipped?: boolean } | undefined)?.skipped;
+}
+
 /** What rest projection needs (all public). */
 type RestInputs = Pick<Subathon, 'startAt' | 'restStandard' | 'tz' | 'rest' | 'restLog' | 'restOverride' | 'restsHidden'>;
 /** What end estimation needs (public + private timer). */
@@ -118,7 +126,7 @@ export function nextRestSlot(s: RestInputs, now: number): ProjectedRest | undefi
  */
 export function projectRests(s: RestInputs, now: number, until: number): RestPlan {
   const projectedRests: ProjectedRest[] = [];
-  if (s.restsHidden) return { projectedRests, currentRest: currentRestOf(s, now) };
+  if (restsHidden(s)) return { projectedRests, currentRest: currentRestOf(s, now) };
   for (const r of restWindows(s, now)) {
     if (r.startAt >= until) break;
     projectedRests.push(r);
