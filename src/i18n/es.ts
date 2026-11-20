@@ -205,6 +205,7 @@ export const es = {
   bgSolid: 'Sólido',
   window: 'Ventana',
   overlayLookHint: 'Se aplica al momento en OBS. Idioma, tema y fondo también cambian los desbloqueos.',
+  overlayLookSharedHint: 'Se aplica al momento en OBS. Compartido con la línea de tiempo.',
   preview: 'Vista previa del directo',
 
   // Landing

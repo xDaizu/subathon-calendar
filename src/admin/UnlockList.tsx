@@ -19,7 +19,7 @@ import {
 } from '../lib/unlocks';
 import { Button, cx, Field, inputCls, Sheet, Switch } from '../ui/ui';
 import { useAdmin } from './context';
-import { AddRowButton } from './EventList';
+import { AddRowButton, OverlayLookCard } from './EventList';
 import { EventSheet, type EditTarget, type EventPrefill } from './EventSheet';
 import { PreviewSection } from './Preview';
 
@@ -77,7 +77,12 @@ export function UnlockList({ tabs }: { tabs: ReactNode }) {
         page="unlocks"
         frameClassName="max-w-72"
         showFrame={onScreenIds.size > 0}
-        customize={<UnlockViewCard view={view} onChange={setView} />}
+        customize={
+          <div className="flex flex-col gap-3">
+            <UnlockViewCard view={view} onChange={setView} />
+            <OverlayLookCard page="unlocks" />
+          </div>
+        }
       />
 
       {rows.length === 0 && (

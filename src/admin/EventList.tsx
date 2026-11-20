@@ -6,7 +6,7 @@ import { eventColor } from '../lib/colors';
 import { eventDisplayState, eventWarning } from '../lib/schedule';
 import { formatDayShort, formatTime } from '../lib/time';
 import type { PlannedEvent, WindowHours } from '../lib/types';
-import { WINDOW_HOURS } from '../overlay/params';
+import { WINDOW_HOURS, type OverlayPage } from '../overlay/params';
 import { Button, Chip, cx, Segmented } from '../ui/ui';
 import { useAdmin } from './context';
 import { EventSheet, type EditTarget } from './EventSheet';
@@ -100,8 +100,12 @@ export function EventList({ onAdd, tabs }: { onAdd: () => void; tabs: ReactNode 
   );
 }
 
-/** How the OBS overlays look (saved in the subathon, so OBS follows it live). */
-function OverlayLookCard() {
+/**
+ * How the OBS overlays look (saved in the subathon, so OBS follows it live).
+ * Language, theme and background are shared by both overlays; position and window are timeline-only.
+ */
+export function OverlayLookCard({ page = 'overlay' }: { page?: OverlayPage }) {
+  const timeline = page === 'overlay';
   const { t } = useT();
   const [look, setLook] = useOverlayLookSetting();
   return (
@@ -116,18 +120,22 @@ function OverlayLookCard() {
         <LookRow label={t('background')}>
           <Segmented value={look.bg} onChange={(v) => setLook({ bg: v })} options={[{ value: 'glass', label: t('bgGlass') }, { value: 'solid', label: t('bgSolid') }]} />
         </LookRow>
-        <LookRow label={t('position')}>
-          <Segmented value={look.pos} onChange={(v) => setLook({ pos: v })} options={[{ value: 'top', label: t('top') }, { value: 'bottom', label: t('bottom') }]} />
-        </LookRow>
-        <LookRow label={t('window')}>
-          <Segmented
-            value={String(look.hours)}
-            onChange={(v) => setLook({ hours: Number(v) as WindowHours })}
-            options={WINDOW_HOURS.map((h) => ({ value: String(h), label: `${h}h` }))}
-          />
-        </LookRow>
+        {timeline && (
+          <>
+            <LookRow label={t('position')}>
+              <Segmented value={look.pos} onChange={(v) => setLook({ pos: v })} options={[{ value: 'top', label: t('top') }, { value: 'bottom', label: t('bottom') }]} />
+            </LookRow>
+            <LookRow label={t('window')}>
+              <Segmented
+                value={String(look.hours)}
+                onChange={(v) => setLook({ hours: Number(v) as WindowHours })}
+                options={WINDOW_HOURS.map((h) => ({ value: String(h), label: `${h}h` }))}
+              />
+            </LookRow>
+          </>
+        )}
       </div>
-      <div className="mt-2 text-xs text-ink-400">{t('overlayLookHint')}</div>
+      <div className="mt-2 text-xs text-ink-400">{t(timeline ? 'overlayLookHint' : 'overlayLookSharedHint')}</div>
     </div>
   );
 }
